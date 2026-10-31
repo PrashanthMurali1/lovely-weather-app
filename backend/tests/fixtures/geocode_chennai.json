@@ -1,0 +1,20 @@
+{
+ "results": [
+  {
+   "id": 1264527,
+   "name": "Chennai",
+   "admin1": "Tamil Nadu",
+   "latitude": 13.08784,
+   "longitude": 80.27847,
+   "country_code": "IN"
+  },
+  {
+   "id": 1273294,
+   "name": "Chennai Village",
+   "latitude": 13.0,
+   "longitude": 80.2,
+   "country_code": "IN"
+  }
+ ],
+ "generationtime_ms": 0.5
+}

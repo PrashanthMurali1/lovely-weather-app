@@ -1,0 +1,16 @@
+{
+  "name": "india-weather",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"node scripts/dev-backend.mjs\" \"npm run dev --prefix frontend\"",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "node scripts/test-backend.mjs",
+    "test:frontend": "npm test --prefix frontend",
+    "test:e2e": "cd frontend && npx playwright test",
+    "build": "npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

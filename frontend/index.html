@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#183b5b" />
+    <meta name="description" content="Weather for Indian cities: now, the next 48 hours and the week ahead, in IST." />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <script>try{var t=localStorage.getItem("india-weather.theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;if(t==="light")document.querySelector("meta[name=theme-color]").content="#cfe6f8"}catch(e){}</script>
+    <title>India Weather</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
