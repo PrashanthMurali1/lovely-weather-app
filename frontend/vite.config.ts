@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { forecastFetchPlugin } from "./src/sw/forecastPlugins.ts";
 
+// Must match the port scripts/dev-backend.mjs starts uvicorn on.
+const API_TARGET = `http://localhost:${process.env.BACKEND_PORT || "8000"}`;
+
 const THEME = "#1e2a5e";
 const GROUND = "#f4eedf";
 
@@ -59,10 +62,10 @@ export default defineConfig({
     }),
   ],
   server: {
-    proxy: { "/api": "http://localhost:8000" },
+    proxy: { "/api": API_TARGET },
   },
   preview: {
-    proxy: { "/api": "http://localhost:8000" },
+    proxy: { "/api": API_TARGET },
   },
   test: {
     environment: "jsdom",

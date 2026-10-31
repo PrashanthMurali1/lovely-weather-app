@@ -10,7 +10,7 @@ Forecasts and place search come from [Open-Meteo](https://open-meteo.com/) (free
 
 - `backend/`: FastAPI app (`/api/forecast`, `/api/search`, `/api/health`), provider interface with an Open-Meteo adapter, SQLite cache with request coalescing, stale fallback and daily budget.
 - `frontend/`: React + TanStack Query SPA, built with Vite and `vite-plugin-pwa` (Workbox service worker). Saved/recent places live in `localStorage`.
-- In dev, Vite proxies `/api` to `localhost:8000`.
+- In dev, Vite proxies `/api` to `localhost:$BACKEND_PORT` (default 8000).
 
 ## Setup
 
@@ -32,7 +32,7 @@ npm install --prefix frontend
 npm run dev
 ```
 
-Starts the API on http://localhost:8000 and the web app on http://localhost:5173.
+Starts the API on http://localhost:8000 (override with `BACKEND_PORT`, e.g. `BACKEND_PORT=8001 npm run dev`; the Vite `/api` proxy follows the same variable) and the web app on http://localhost:5173 (Vite picks the next free port if taken).
 
 ## Tests
 
@@ -78,4 +78,4 @@ Run 2026-10-31 against the production build served by `vite preview` (Lighthouse
 | --- | --- | --- | --- |
 | 100 | 100 | 100 | 100 |
 
-Installability was checked manually (Lighthouse 12 has no PWA category): the manifest is valid with 192, 512 and maskable icons, the service worker activates and controls the page, and an offline reload renders the app shell and the last forecast with the offline banner. Repeated identical forecast requests produced a single upstream call (`/api/health` `upstreamCallsToday` went 0 to 1 over 3 requests).
+Installability was checked manually (Lighthouse 12 has no PWA category): the manifest is valid with 192, 512 and maskable icons, the service worker activates and controls the page, and an offline reload renders the app shell and the last forecast with the offline banner. Repeated identical forecast requests produced a single upstream call (`/api/health` `upstreamCallsToday` went 0 to 1 over 3 requests). Port 8000 was occupied by another process on the author's machine, so the backend checks ran with `BACKEND_PORT=8001`: the Lighthouse/offline/health run used a temporary preview config, and `BACKEND_PORT=8001 npm run dev` was separately run for real (Vite and uvicorn both started, `/api/health` through the Vite port returned the backend JSON, and stopping the process tree freed both ports).
