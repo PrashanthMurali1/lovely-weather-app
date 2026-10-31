@@ -2,6 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { forecastFetchPlugin } from "./src/sw/forecastPlugins.ts";
 
 const THEME = "#0e7490"; // placeholder; replaced in Task 11
 
@@ -40,6 +41,8 @@ export default defineConfig({
               cacheName: "forecast",
               networkTimeoutSeconds: 4,
               expiration: { maxEntries: 20 },
+              cacheableResponse: { statuses: [200] },
+              plugins: [forecastFetchPlugin],
             },
           },
           {

@@ -35,10 +35,19 @@ describe("pwa build output", () => {
   it("emits a service worker with the runtime caches", () => {
     const path = resolve(out, "sw.js");
     expect(existsSync(path)).toBe(true);
-    const sw = readFileSync(path, "utf8");
-    expect(sw).toContain("/api/forecast");
-    expect(sw).toContain("/api/search");
-    expect(sw).toContain("forecast");
-    expect(sw).toContain("search");
+    const raw = readFileSync(path, "utf8");
+    // Normalise whitespace/quotes: the SW is minified in builds, pretty-printed in test mode.
+    const sw = raw.replace(/[\s"']+/g, "");
+    expect(raw).toContain("/api/forecast");
+    expect(raw).toContain("/api/search");
+    expect(sw).toContain("cacheName:forecast");
+    expect(sw).toContain("cacheName:search");
+    expect(sw).toContain("fetchDidSucceed");
+    expect(sw).toContain("networkTimeoutSeconds:4");
+    expect(sw).toContain("statuses:[200]");
+    expect(sw).toContain("maxEntries:20");
+    expect(sw).toContain("maxEntries:50");
+    expect(sw).toMatch(/NetworkFirst/);
+    expect(sw).toMatch(/StaleWhileRevalidate/);
   });
 });
