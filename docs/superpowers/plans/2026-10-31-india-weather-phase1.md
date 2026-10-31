@@ -29,7 +29,7 @@
 
 ## Review Focus
 
-1. Open-Meteo returns `null` for `precipitation_probability` with IFS → schema allows `null`; UI shows "—", never "0%". (Task 4, Task 9)
+1. Open-Meteo returns `null` for `precipitation_probability` with IFS → schema allows `null`; the UI derives the label from rain amount via `formatRainChance` (0 mm → "0%", under 0.1 mm → "Trace", otherwise "{mm} mm") and never shows "—". (Task 4, Task 9)
 2. `lat`/`lon` out of range or non-numeric → 422, not 500 or an upstream call. (Task 6)
 3. Search query case/whitespace variants (`" CHENNAI "`) hit one cache key; 1-char query → 422. (Task 5, Task 6)
 4. `localStorage` unavailable (private mode) or geolocation denied → app still renders with the default city. (Task 8, Task 9)
@@ -252,22 +252,23 @@ frontend/
 ### Task 9: Components and App (structure, unstyled-but-semantic)
 
 **Files:**
-- Create: `src/components/Hero.tsx`, `HourlyStrip.tsx`, `DailyList.tsx`, `SearchSheet.tsx`, `StatusBanner.tsx`, `Footer.tsx`, `src/App.tsx`, `src/main.tsx`
-- Test: `frontend/tests/components.test.tsx`
+- Create: `src/lib/format.ts`, `src/components/Hero.tsx`, `HourlyStrip.tsx`, `DailyList.tsx`, `SearchSheet.tsx`, `StatusBanner.tsx`, `Footer.tsx`, `src/App.tsx`, `src/main.tsx`
+- Test: `frontend/tests/components.test.tsx`, `frontend/tests/format.test.ts`
 
 **Interfaces:**
 - Consumes: Task 7 types and weather codes, Task 8 hooks.
 - Produces (props):
+  - `format.ts`: `formatRainChance(probPct: number | null, precipMm: number): string` — number → `"{n}%"` (a real `0` is `"0%"`); `null` and `precipMm === 0` → `"0%"`; `null` and `precipMm < 0.1` → `"Trace"`; otherwise `"{precipMm rounded to 1 decimal} mm"`.
   - `Hero({ place: Place; current: Current; fetchedAt: string })`
-  - `HourlyStrip({ hourly: HourlyPoint[] })` — rain probability `null` renders "—".
-  - `DailyList({ daily: DailyPoint[] })`
+  - `HourlyStrip({ hourly: HourlyPoint[] })` — rain label from `formatRainChance(precipProbPct, precipMm)`.
+  - `DailyList({ daily: DailyPoint[] })` — rain label from `formatRainChance(precipProbPct, precipSumMm)`.
   - `SearchSheet({ open: boolean; onClose(): void; onSelect(p: Place): void })`
   - `StatusBanner({ offline: boolean; stale: boolean; fetchedAt?: string; error?: ApiError | null; onRetry(): void })` — renders nothing when all clear.
   - `Footer({ attribution: string })`
   - `App` — owns selected place (initial: last `places.recent[0]` else `DEFAULT_PLACE`), "Use my location" button (calls `navigator.geolocation`; on denial/error, keeps current place silently), opens SearchSheet, wires `useForecast`, `navigator.onLine` + `online/offline` events, and renders Footer even in error/loading states (fallback attribution "Weather data by Open-Meteo.com").
   - Semantic markup only: `<main>`, `<header>`, `<section aria-labelledby>`, `<ol>` for lists, buttons as `<button>`, labelled input, focus moved into the sheet on open and restored on close. Use plain class names (`hero`, `hourly`, …) for the later design step.
 
-- [ ] **Step 1: Write failing tests:** Hero shows temperature and condition label; HourlyStrip shows "—" for null probability and "0%" for `0`; DailyList renders 7 rows; StatusBanner shows "Offline, showing data from …" when `offline`, the stale message when `stale`, a Retry button on `error` that calls `onRetry`, and nothing otherwise; SearchSheet: typing "chen" lists mocked results and clicking one calls `onSelect`; empty input shows saved/recent; empty results show "No cities found"; App renders Chennai forecast on first load with mocked API, and still renders when geolocation rejects and `localStorage` throws; Footer shows the attribution.
+- [ ] **Step 1: Write failing tests:** `format.test.ts`: `formatRainChance(35, 2)` → `"35%"`, `(0, 3)` → `"0%"`, `(null, 0)` → `"0%"`, `(null, 0.05)` → `"Trace"`, `(null, 0.44)` → `"0.4 mm"`. Components: Hero shows temperature and condition label; HourlyStrip shows `"Trace"` for a null-probability point with 0.05 mm and `"0%"` for probability `0`; DailyList renders 7 rows and uses `precipSumMm` for null probability; StatusBanner shows "Offline, showing data from …" when `offline`, the stale message when `stale`, a Retry button on `error` that calls `onRetry`, and nothing otherwise; SearchSheet: typing "chen" lists mocked results and clicking one calls `onSelect`; empty input shows saved/recent; empty results show "No cities found"; App renders Chennai forecast on first load with mocked API, and still renders when geolocation rejects and `localStorage` throws; Footer shows the attribution.
 - [ ] **Step 2: Run** `npm test -- components` → FAIL.
 - [ ] **Step 3: Implement** the components and `App.tsx`; `main.tsx` mounts `QueryClientProvider`.
 - [ ] **Step 4: Run** → PASS; run the app against the backend (`npm run dev` in both) and confirm the Chennai forecast renders.
