@@ -89,6 +89,7 @@ async def test_concurrent_requests_one_upstream_call(env):
     await asyncio.gather(*[svc.get_forecast(13.08, 80.27) for _ in range(10)])
     assert len(prov.forecast_calls) == 1
     assert budget.count_today() == 1
+    assert svc._locks == {}
 
 
 async def test_expired_entry_refreshes(env):
@@ -117,6 +118,7 @@ async def test_upstream_failure_no_cache_raises(env):
     with pytest.raises(UpstreamUnavailable):
         await svc.get_forecast(13.08, 80.27)
     assert budget.count_today() == 1  # attempts are counted
+    assert svc._locks == {}
 
 
 async def test_budget_exhausted_serves_stale_without_upstream_call(env):

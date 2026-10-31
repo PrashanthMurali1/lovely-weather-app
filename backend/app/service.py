@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Awaitable, Callable, Optional, TypeVar
 
@@ -32,10 +33,22 @@ class WeatherService:
         self.budget = budget
         self.settings = settings
         self._now = now
-        self._locks: dict[str, asyncio.Lock] = {}
+        # key -> [lock, waiters]; entries exist only while a call is in flight.
+        self._locks: dict[str, list] = {}
 
-    def _lock(self, key: str) -> asyncio.Lock:
-        return self._locks.setdefault(key, asyncio.Lock())
+    @asynccontextmanager
+    async def _lock(self, key: str):
+        slot = self._locks.get(key)
+        if slot is None:
+            slot = self._locks[key] = [asyncio.Lock(), 0]
+        slot[1] += 1
+        try:
+            async with slot[0]:
+                yield
+        finally:
+            slot[1] -= 1
+            if slot[1] == 0:
+                del self._locks[key]
 
     def _read(
         self, key: str, load: Callable[[dict], T]
