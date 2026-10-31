@@ -32,7 +32,7 @@ npm install --prefix frontend
 npm run dev
 ```
 
-Starts the API on http://localhost:8000 (override with `BACKEND_PORT`, e.g. `BACKEND_PORT=8001 npm run dev`; the Vite `/api` proxy follows the same variable) and the web app on http://localhost:5173 (Vite picks the next free port if taken).
+Starts the API on http://localhost:8000 (override with `BACKEND_PORT`, the Vite `/api` proxy follows the same variable). Examples: POSIX `BACKEND_PORT=8001 npm run dev`, PowerShell `$env:BACKEND_PORT = "8001"; npm run dev`, cmd `set BACKEND_PORT=8001 && npm run dev` and the web app on http://localhost:5173 (Vite picks the next free port if taken).
 
 ## Tests
 
@@ -55,6 +55,7 @@ All optional, prefix `WEATHER_`; see `backend/.env.example`.
 | `WEATHER_STALE_RETENTION_SECONDS` | `86400` |
 | `WEATHER_DAILY_BUDGET_SOFT_LIMIT` | `8000` |
 | `WEATHER_UPSTREAM_TIMEOUT_SECONDS` | `8.0` |
+| `WEATHER_FAILURE_COOLDOWN_SECONDS` | `20` |
 | `WEATHER_ALLOWED_ORIGINS` | `["http://localhost:5173"]` |
 
 `WEATHER_ALLOWED_ORIGINS` is a list, so it must be a JSON array, e.g. `WEATHER_ALLOWED_ORIGINS=["https://weather.example.com"]`.
@@ -79,3 +80,5 @@ Run 2026-10-31 against the production build served by `vite preview` (Lighthouse
 | 100 | 100 | 100 | 100 |
 
 Installability was checked manually (Lighthouse 12 has no PWA category): the manifest is valid with 192, 512 and maskable icons, the service worker activates and controls the page, and an offline reload renders the app shell and the last forecast with the offline banner. Repeated identical forecast requests produced a single upstream call (`/api/health` `upstreamCallsToday` went 0 to 1 over 3 requests). Port 8000 was occupied by another process on the author's machine, so the backend checks ran with `BACKEND_PORT=8001`: the Lighthouse/offline/health run used a temporary preview config, and `BACKEND_PORT=8001 npm run dev` was separately run for real (Vite and uvicorn both started, `/api/health` through the Vite port returned the backend JSON, and stopping the process tree freed both ports).
+
+Not exercised on the author's machine (Windows): the POSIX process-group kill path of the dev command and its missing-venv error message.

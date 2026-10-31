@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Place } from "../src/api/types";
@@ -13,6 +13,7 @@ import { getForecast, searchPlaces } from "../src/api/client";
 import { useForecast } from "../src/hooks/useForecast";
 import { useSavedPlaces } from "../src/hooks/useSavedPlaces";
 import { useSearch } from "../src/hooks/useSearch";
+import { createQueryClient } from "../src/lib/queryClient";
 import { DEFAULT_PLACE } from "../src/lib/defaults";
 
 function wrapper() {
@@ -131,5 +132,30 @@ describe("useSavedPlaces", () => {
     const { result } = renderHook(() => useSavedPlaces());
     expect(result.current.saved.map((p) => p.id)).toEqual([1]);
     expect(result.current.recent).toEqual([]);
+  });
+});
+
+describe("offline-first fetching", () => {
+  afterEach(() => onlineManager.setOnline(true));
+
+  async function runOffline(client: QueryClient) {
+    onlineManager.setOnline(false);
+    const w = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    renderHook(() => useForecast(mk(5)), { wrapper: w });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+  }
+
+  it("still calls getForecast while offline with createQueryClient", async () => {
+    await runOffline(createQueryClient());
+    expect(getForecast).toHaveBeenCalledTimes(1);
+  });
+
+  it("default QueryClient would pause (guards the regression)", async () => {
+    await runOffline(new QueryClient());
+    expect(getForecast).not.toHaveBeenCalled();
   });
 });

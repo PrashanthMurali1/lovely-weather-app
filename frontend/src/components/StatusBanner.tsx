@@ -31,11 +31,14 @@ export default function StatusBanner({ offline, stale, fetchedAt, error, onRetry
     );
   }
   if (offline) {
-    const when = fetchedAt ? formatFetchedWhen(fetchedAt) : "earlier";
     return (
       <div className="status-banner status-offline" role="status">
         <Icon name="offline" />
-        <p>Offline, showing data from {when}.</p>
+        <p>
+          {fetchedAt
+            ? `Offline, showing data from ${formatFetchedWhen(fetchedAt)}.`
+            : "You're offline. Connect to load the forecast."}
+        </p>
       </div>
     );
   }

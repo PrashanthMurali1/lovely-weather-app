@@ -115,6 +115,11 @@ describe("DailyList", () => {
 });
 
 describe("StatusBanner", () => {
+  it("offline with no data", () => {
+    render(<StatusBanner offline stale={false} onRetry={() => {}} />);
+    expect(screen.getByText("You're offline. Connect to load the forecast.")).toBeInTheDocument();
+    expect(screen.queryByText(/showing data/)).not.toBeInTheDocument();
+  });
   it("offline", () => {
     render(<StatusBanner offline stale={false} fetchedAt="2026-10-31T08:30:00Z" onRetry={() => {}} />);
     expect(screen.getByText(/Offline, showing data from/)).toBeInTheDocument();
