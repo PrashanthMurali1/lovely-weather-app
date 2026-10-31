@@ -12,3 +12,6 @@ dist-test/
 .impeccable/mocks/
 .impeccable/hook.cache.json
 .impeccable/questions/
+playwright-report/
+test-results/
+frontend/dist-test/
