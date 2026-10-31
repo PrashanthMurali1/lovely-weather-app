@@ -56,9 +56,11 @@ class Cache:
             )
             if not isinstance(entry.payload, dict):
                 return None
+            if entry.fetched_at.tzinfo is None or entry.expires_at.tzinfo is None:
+                return None
+            if self._now() > entry.expires_at + self._retention:
+                return None
         except Exception:
-            return None
-        if self._now() > entry.expires_at + self._retention:
             return None
         return entry
 
@@ -77,8 +79,13 @@ class Cache:
             )
             self._conn.commit()
 
-    def purge(self, retention_seconds: int) -> int:
-        cutoff = (self._now() - timedelta(seconds=retention_seconds)).isoformat()
+    def purge(self, retention_seconds: Optional[int] = None) -> int:
+        retention = (
+            self._retention
+            if retention_seconds is None
+            else timedelta(seconds=retention_seconds)
+        )
+        cutoff = (self._now() - retention).isoformat()
         with self._lock:
             cur = self._conn.execute(
                 "DELETE FROM cache WHERE expires_at < ?", (cutoff,)

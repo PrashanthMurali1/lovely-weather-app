@@ -58,3 +58,21 @@ def test_corrupt_payload_returns_none(tmp_path):
     conn.commit()
     conn.close()
     assert cache.get("k") is None
+
+
+def test_naive_timestamp_returns_none(tmp_path):
+    cache, _ = make(tmp_path)
+    cache.set("k", {"a": 1}, 10)
+    conn = sqlite3.connect(str(tmp_path / "sub" / "c.db"))
+    conn.execute("UPDATE cache SET expires_at='2026-01-01T00:00:00'")
+    conn.commit()
+    conn.close()
+    assert cache.get("k") is None
+
+
+def test_purge_defaults_to_cache_retention(tmp_path):
+    clock = Clock()
+    cache = Cache(str(tmp_path / "c.db"), now=clock, retention_seconds=100)
+    cache.set("k", {"a": 1}, 10)
+    clock.advance(10 + 101)
+    assert cache.purge() == 1
