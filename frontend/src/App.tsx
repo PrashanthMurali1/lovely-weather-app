@@ -12,6 +12,8 @@ import Stats from "./components/Stats";
 import StatusBanner from "./components/StatusBanner";
 import { useForecast } from "./hooks/useForecast";
 import { useSavedPlaces } from "./hooks/useSavedPlaces";
+import { useSpotlight } from "./hooks/useSpotlight";
+import { useTheme } from "./hooks/useTheme";
 import { DEFAULT_PLACE } from "./lib/defaults";
 
 const FALLBACK_ATTRIBUTION = "Weather data by Open-Meteo.com";
@@ -40,6 +42,8 @@ export default function App() {
   const [locationMessage, setLocationMessage] = useState("");
   const pageRef = useRef<HTMLDivElement>(null);
   const online = useOnline();
+  const { theme, toggle: toggleTheme } = useTheme();
+  useSpotlight();
   const forecast = useForecast(place);
   useEffect(() => {
     if (pageRef.current) pageRef.current.inert = searchOpen;
@@ -94,6 +98,7 @@ export default function App() {
   return (
     <>
       <WeatherScene current={data?.current} today={today} />
+      <div className="cursor-light" aria-hidden="true" />
       <div className="app-content" ref={pageRef}>
       <header className="app-header">
         <h1 className="app-title">
@@ -101,6 +106,10 @@ export default function App() {
           India Weather
         </h1>
         <div className="app-actions">
+          <button type="button" className="btn btn-quiet theme-toggle" title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"} onClick={toggleTheme}>
+            <Icon name={theme === "dark" ? "sun" : "moon"} />
+            <span className="visually-hidden">{theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}</span>
+          </button>
           <button type="button" className="btn btn-quiet" title="Use my location" onClick={locateMe} disabled={locating} aria-busy={locating}>
             <Icon name="locate" />
             <span className="visually-hidden">Use my location</span>

@@ -7,6 +7,7 @@ export default function WeatherScene({ current, today }: { current?: Current; to
   return (
     <div className="weather-scene" data-scene={scene} data-night={current ? !current.isDay : true} aria-hidden="true">
       <div className="scene-light" />
+      <div className="scene-glow scene-glow-a" /><div className="scene-glow scene-glow-b" /><div className="scene-glow scene-glow-c" />
       {scene === "night" ? <div className="scene-stars" /> : null}
       {celestial ? <div className={`scene-orb ${scene === "night" ? "scene-moon" : ""}`} /> : null}
       <div className="scene-cloud scene-cloud-back" /><div className="scene-cloud scene-cloud-front" />

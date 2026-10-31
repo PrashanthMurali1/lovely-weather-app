@@ -1,11 +1,40 @@
-﻿@font-face{font-family:Archivo;font-style:normal;font-weight:100 900;font-display:swap;src:url("./fonts/archivo-latin-wght.woff2") format("woff2")}
+﻿@font-face{font-family:Onest;font-style:normal;font-weight:100 900;font-display:swap;src:url("./fonts/onest-latin-wght.woff2") format("woff2")}
 :root{
   color-scheme:dark;
-  --font:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --ink:#fff;--muted:#dce9f6;--ground:#111d38;--surface:#102e4fe8;--surface-hover:#244d73;
-  --rule:#d8eaff26;--warm:#ffe1a6;--rain:#bce7ff;--focus:#ffe1a6;
+  --font:Onest,system-ui,-apple-system,"Segoe UI",sans-serif;
   --text-xs:.75rem;--text-sm:.875rem;--text-md:1rem;--text-lg:1.25rem;--text-xl:1.5rem;
-  --gutter:1.125rem;--tap:2.75rem;--radius:1.25rem;--page:72rem;
+  --gutter:1.125rem;--tap:2.75rem;--radius:1.5rem;--page:72rem;
   --ease-out:cubic-bezier(.16,1,.3,1);
   --s1:.25rem;--s2:.5rem;--s3:.75rem;--s4:1rem;--s5:1.5rem;--s6:2rem;--s7:3rem;
+
+  /* dark: frosted night glass over the lit sky */
+  --ink:#fff;--muted:#dce9f6;--ground:#111d38;
+  --glass:#0d234a6b;--glass-solid:#10294e;--glass-hover:#ffffff1f;--glass-strong:#0d234a99;
+  --glass-edge:#ffffff2e;--glass-edge-top:#ffffff55;--glass-shadow:#02102a59;
+  --blur:blur(26px) saturate(160%);
+  --spot:#ffffff;--spot-ambient:#ffffff1c;--spot-edge:#ffffffb3;--spot-sheen:#ffffff1a;
+  --rule:#ffffff22;--warm:#ffe1a6;--rain:#bce7ff;--focus:#ffe1a6;--sel-bg:#ffe1a6;--sel-ink:#123354;
+  --btn-primary:#ffe1a62e;--btn-primary-edge:#ffe1a680;
+  --err:#613a47c4;--stale:#544527c4;--offline:#244565c4;
+  --scroll-thumb:#c7ddee66;
+  --range-from:#a3d3e1;--range-to:#ffe0a1;--range-track:#ffffff1c;
+  --ic-line:#e6f2ff;--ic-warm:#ffe1a6;--ic-cloud:#dae7f3;--ic-moon:#e4e9ff;--ic-rain:#9bdaff;--ic-bolt:#ffe1a6;
+  --sun-track:#f7e3b8;--sun-horizon:#e4efff40;
+  --scrim:#07152eb3;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  /* light: milk glass over a daylit sky; ink is deep navy, never black */
+  --ink:#0b2442;--muted:#41597a;--ground:#dbeaf8;
+  --glass:#ffffff94;--glass-solid:#f2f7fc;--glass-hover:#ffffffa6;--glass-strong:#ffffffbd;
+  --glass-edge:#ffffffb3;--glass-edge-top:#fffffff2;--glass-shadow:#1c4b7a2e;
+  --spot:#ffffff;--spot-ambient:#ffffff59;--spot-edge:#ffffff;--spot-sheen:#ffffff8c;
+  --rule:#0b244222;--warm:#b45309;--rain:#14609c;--focus:#0b5cad;--sel-bg:#0b5cad;--sel-ink:#fff;
+  --btn-primary:#0b244214;--btn-primary-edge:#0b244266;
+  --err:#ffd6dde0;--stale:#ffeab8e6;--offline:#d3e3f4e6;
+  --scroll-thumb:#0b244244;
+  --range-from:#4aa3d6;--range-to:#e9962a;--range-track:#0b244218;
+  --ic-line:#37597f;--ic-warm:#e08a00;--ic-cloud:#8ea6c2;--ic-moon:#6f7bc4;--ic-rain:#1f7ac2;--ic-bolt:#c27800;
+  --sun-track:#b45309;--sun-horizon:#0b244240;
+  --scrim:#dbeaf8b3;
 }

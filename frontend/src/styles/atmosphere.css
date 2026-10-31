@@ -9,3 +9,22 @@
 .scene-rain{position:absolute;top:160px;right:8%;width:350px;height:210px;background-image:linear-gradient(110deg,transparent 47%,#a4c7df50 49%,#a4c7df50 50%,transparent 52%);background-size:31px 83px;opacity:.25;mask-image:linear-gradient(transparent,#000 40%,transparent)}.scene-snow{position:absolute;top:145px;right:10%;width:320px;height:230px;background:radial-gradient(circle at 20% 20%,#fff8 0 2px,transparent 3px),radial-gradient(circle at 60% 60%,#fff8 0 2px,transparent 3px),radial-gradient(circle at 80% 30%,#fff8 0 2px,transparent 3px),radial-gradient(circle at 40% 80%,#fff8 0 2px,transparent 3px)}
 @media(prefers-reduced-motion:no-preference){.scene-cloud{animation:cloud-drift 22s ease-in-out infinite alternate}@keyframes cloud-drift{to{transform:translateX(16px) rotate(-3deg)}}}html[data-page-hidden=true] .scene-cloud{animation-play-state:paused}
 @media(max-width:700px){.scene-light{height:750px;background:radial-gradient(ellipse at 110% 28%,#ffefc83d,transparent 55%)}.scene-orb{width:90px;height:90px;right:-22px;top:148px;opacity:.38}.scene-cloud{right:-110px;top:285px;width:280px;height:100px;opacity:.24}.scene-cloud-back{top:200px;right:-180px;width:400px;opacity:.16}.scene-stars{width:100%;opacity:.45;right:0;top:100px}.weather-scene[data-scene=cloudy] .scene-cloud,.weather-scene[data-scene=rain] .scene-cloud,.weather-scene[data-scene=storm] .scene-cloud,.weather-scene[data-scene=fog] .scene-cloud{width:360px;opacity:.2;right:-145px}.scene-rain,.scene-snow{right:-100px;opacity:.13}.weather-scene[data-scene=dawn] .scene-orb,.weather-scene[data-scene=dusk] .scene-orb{top:270px}}
+/* Ambient glow blobs: give the glass something to refract */
+.scene-glow{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55}.scene-glow-a{width:520px;height:520px;left:-6%;top:520px;background:#5fb2ff}.scene-glow-b{width:460px;height:460px;right:-4%;top:900px;background:#ffb58a;opacity:.4}.scene-glow-c{width:380px;height:380px;left:38%;top:1250px;background:#7c8cff;opacity:.4}
+.weather-scene[data-scene=night] .scene-glow-a{background:#4a5bd0}.weather-scene[data-scene=night] .scene-glow-b{background:#8a5fc9;opacity:.32}.weather-scene[data-scene=rain] .scene-glow-b,.weather-scene[data-scene=storm] .scene-glow-b,.weather-scene[data-scene=cloudy] .scene-glow-b{background:#7fa6c4;opacity:.35}
+@media(prefers-reduced-motion:no-preference){.scene-glow-a{animation:glow-drift 26s ease-in-out infinite alternate}.scene-glow-b{animation:glow-drift 32s ease-in-out infinite alternate-reverse}@keyframes glow-drift{to{transform:translate(48px,-36px)}}}html[data-page-hidden=true] .scene-glow{animation-play-state:paused}
+/* Light theme skies: same weather, daylit */
+:root[data-theme=light] .weather-scene{--sky-top:#8cc4f0;--sky-mid:#cfe6f8;--sky-low:#e9f3fc}
+:root[data-theme=light] .weather-scene[data-scene=night]{--sky-top:#aeb8ea;--sky-mid:#cdd3f2;--sky-low:#e3e6f6}
+:root[data-theme=light] .weather-scene[data-scene=cloudy],:root[data-theme=light] .weather-scene[data-scene=snow],:root[data-theme=light] .weather-scene[data-scene=fog]{--sky-top:#aebfcf;--sky-mid:#cdd8e2;--sky-low:#e6ecf1}
+:root[data-theme=light] .weather-scene[data-scene=rain]{--sky-top:#92aec5;--sky-mid:#b9cddc;--sky-low:#dae5ed}
+:root[data-theme=light] .weather-scene[data-scene=storm]{--sky-top:#8497b0;--sky-mid:#aebcce;--sky-low:#d3dce7}
+:root[data-theme=light] .weather-scene[data-scene=dawn],:root[data-theme=light] .weather-scene[data-scene=dusk]{--sky-top:#e9b9b4;--sky-mid:#f6d8c6;--sky-low:#efe3ee}
+:root[data-theme=light] .weather-scene[data-night=true]:not([data-scene=night]):not([data-scene=dawn]):not([data-scene=dusk]){--sky-top:#a3b2c9;--sky-mid:#c3cedd;--sky-low:#dfe5ee}
+:root[data-theme=light] .scene-light{background:radial-gradient(ellipse at 80% 14%,#fff8dccc,transparent 40%)}
+:root[data-theme=light] .scene-orb{box-shadow:0 16px 90px 40px #ffd27a55}
+:root[data-theme=light] .scene-moon{background:#fff;box-shadow:0 16px 90px 30px #8f9be655}
+:root[data-theme=light] .scene-stars{opacity:0}
+:root[data-theme=light] .scene-cloud{background:radial-gradient(ellipse at 38% 70%,#fffffff2,transparent 64%),radial-gradient(ellipse at 70% 55%,#ffffffc0,transparent 62%)}
+:root[data-theme=light] .scene-glow-a{background:#7cc0ff}:root[data-theme=light] .scene-glow-b{background:#ffc9a0;opacity:.5}:root[data-theme=light] .scene-glow-c{background:#b3bcff;opacity:.5}
+.weather-scene{transition:filter 400ms ease}

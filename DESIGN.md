@@ -22,11 +22,15 @@ The atmospheric layer is aria-hidden, pointer-inert and isolated behind the inte
 
 ## Type and hierarchy
 
-Self-hosted Archivo variable with system fallbacks, tabular numerals. Current temperature: 124px desktop, 108px phone, weight 200, -0.04em tracking. City: 37/29px, weight 500. Condition: 23/20px. Headings: 17/15px, weight 550. Body/actions: 14–16px; supporting labels: at least 12px. Preserve whitespace around the primary answer and allow long place names to wrap. White foreground; muted #DCE9F6 and rain #BCE7FF. Do not lower label contrast through opacity.
+Self-hosted Onest variable with system fallbacks, tabular numerals. Current temperature: 124px desktop, 108px phone, weight 200, -0.04em tracking. City: 37/29px, weight 500. Condition: 23/20px. Headings: 17/15px, weight 550. Body/actions: 14–16px; supporting labels: at least 12px. Preserve whitespace around the primary answer and allow long place names to wrap. White foreground; muted #DCE9F6 and rain #BCE7FF. Do not lower label contrast through opacity.
 
 ## Surfaces, layout and controls
 
-One dark scene-compatible reading surface (#102E4F at 91% alpha), 20px radius on desktop/18px phone, soft downward shadow. No nested cards. Transparent controls use a darker stable reading fill. Focus is a 3px warm #FFE1A6 outline with 4px offset. Controls are at least 44px. No backdrop-filter requirement; readable without blur. Declare safe-area insets at the page and search sheet edges.
+Frosted-glass surfaces (backdrop blur 26px, saturate 160%, 1px light edge, inset top highlight) float over the scene; the hero stays open. Dark: navy glass #0D234A at ~42%, white ink. Light: milk glass white at ~58%, navy ink #0B2442, muted #41597A. Search sheet uses a stronger 40px blur. Without backdrop-filter support the glass falls back to an opaque solid. Glass is for surfaces over the sky only; no nested glass.
+
+## Theme and cursor light
+
+Light/dark toggle in the header (sun/moon icon), stored as india-weather.theme, defaulting to the OS preference and applied before first paint to avoid a flash. Each weather scene has a daylit light-theme sky. Pointer-only cursor light (hover:hover and pointer:fine): a soft page-level glow plus a sheen and edge highlight on nearby glass surfaces and buttons, driven by --mx/--my; hourly and daily rows tint on hover. Forced-colors disables it.
 
 Content max width: 72rem, 80rem on screens above 1600px. At widths under 1024px, stack the forecast sections; conditions may use four columns at intermediate widths. Under 700px, centered hero and two-column condition metrics, 18px page gutters, horizontal hourly strip with partial next item. Secondary desktop area: 1.3fr/1fr, 22px gap. No page-wide horizontal scrolling. Hourly items are positioned containers so offscreen assistive labels stay in the scroller.
 
