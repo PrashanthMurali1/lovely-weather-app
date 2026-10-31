@@ -1,0 +1,47 @@
+import { ApiError } from "../api/client";
+import { formatFetchedTime } from "../lib/format";
+
+interface Props {
+  offline: boolean;
+  stale: boolean;
+  fetchedAt?: string;
+  error?: Error | null;
+  onRetry: () => void;
+}
+
+function friendlyMessage(error: Error): string {
+  if (!(error instanceof ApiError)) return "Can't reach the weather service.";
+  if (error.code === "upstream_unavailable" || error.code === "upstream_rate_limited") {
+    return "Weather data is temporarily unavailable.";
+  }
+  return "Something went wrong.";
+}
+
+export default function StatusBanner({ offline, stale, fetchedAt, error, onRetry }: Props) {
+  if (error) {
+    return (
+      <div className="status-banner status-error" role="alert">
+        <p>{friendlyMessage(error)}</p>
+        <button type="button" onClick={onRetry}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (offline) {
+    const when = fetchedAt ? formatFetchedTime(fetchedAt) : "earlier";
+    return (
+      <div className="status-banner status-offline" role="status">
+        <p>Offline, showing data from {when}.</p>
+      </div>
+    );
+  }
+  if (stale) {
+    return (
+      <div className="status-banner status-stale" role="status">
+        <p>Showing older data — the weather service is unavailable.</p>
+      </div>
+    );
+  }
+  return null;
+}
