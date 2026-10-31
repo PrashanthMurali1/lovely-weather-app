@@ -1,0 +1,123 @@
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/archivo-latin-wght.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+
+  /* Ground and ink */
+  --ground: #f4eedf;
+  --ground-deep: #e9e1cc;
+  --surface: #fbf8f0;
+  --ink: #1b1a2b;
+  --ink-muted: #5b5566;
+  --rule: #d9cfb8;
+  --rule-strong: #7d7462;
+
+  /* Dyes */
+  --indigo: #1e2a5e;
+  --on-indigo: #f4eedf;
+  --on-indigo-muted: #c9cde3;
+  --madder: #a3262a;
+  --on-madder: #f4eedf;
+  --turmeric: #e8a317;
+  --turmeric-hover: #d69410;
+  --on-turmeric: #1b1a2b;
+  --rain-text: #1e2a5e;
+
+  /* States */
+  --info-bg: #dce0ee;
+  --info-ink: #1b1a2b;
+  --warn-bg: #f6e3b0;
+  --warn-ink: #1b1a2b;
+
+  /* Print */
+  --print-ground: #fbf8f0;
+  --print-ink: #1e2a5e;
+
+  /* Stepped temperature bands (daytime high) */
+  --band-1: #d9deee;
+  --band-1-ink: #1b1a2b;
+  --band-2: #e9e1cc;
+  --band-2-ink: #1b1a2b;
+  --band-3: #f2c462;
+  --band-3-ink: #1b1a2b;
+  --band-4: #e9a79a;
+  --band-4-ink: #1b1a2b;
+  --band-5: #a3262a;
+  --band-5-ink: #f4eedf;
+
+  --focus: #1b1a2b;
+  --focus-on-dye: #f2c462;
+
+  /* Type */
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-numeral: clamp(8rem, 48vw, 12rem);
+
+  /* Space (4px rhythm) */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --gutter: 1rem;
+
+  --tap: 2.75rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --ground: #12131f;
+    --ground-deep: #1c1f33;
+    --surface: #1c1f33;
+    --ink: #f4eedf;
+    --ink-muted: #bdb8a8;
+    --rule: #2e3148;
+    --rule-strong: #6a6d85;
+
+    --indigo: #2a3870;
+    --on-indigo: #f4eedf;
+    --on-indigo-muted: #c9cde3;
+    --madder: #9e3036;
+    --on-madder: #f4eedf;
+    --turmeric: #e0a82a;
+    --turmeric-hover: #f2c462;
+    --on-turmeric: #1b1a2b;
+    --rain-text: #aeb8e8;
+
+    --info-bg: #2b3560;
+    --info-ink: #f4eedf;
+    --warn-bg: #4a3b12;
+    --warn-ink: #f4eedf;
+
+    --print-ground: #1c1f33;
+    --print-ink: #8e9bd6;
+
+    --band-1: #2b3560;
+    --band-1-ink: #f4eedf;
+    --band-2: #44465a;
+    --band-2-ink: #f4eedf;
+    --band-3: #c88a10;
+    --band-3-ink: #1b1a2b;
+    --band-4: #7e2e2e;
+    --band-4-ink: #f4eedf;
+    --band-5: #b23a3f;
+    --band-5-ink: #f4eedf;
+
+    --focus: #f2c462;
+  }
+}

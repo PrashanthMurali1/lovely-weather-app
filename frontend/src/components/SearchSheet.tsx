@@ -3,6 +3,7 @@ import type { KeyboardEvent } from "react";
 import type { Place } from "../api/types";
 import { useSavedPlaces } from "../hooks/useSavedPlaces";
 import { useSearch } from "../hooks/useSearch";
+import Icon from "./Icon";
 
 interface Props {
   open: boolean;
@@ -89,51 +90,63 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
       ref={dialogRef}
       onKeyDown={onKeyDown}
     >
-      <div className="search-header">
-        <h2 id="search-title">Choose a place</h2>
-        <button type="button" onClick={onClose}>
-          Close
-        </button>
-      </div>
-      <label htmlFor="search-input">Search for a city</label>
-      <input
-        id="search-input"
-        ref={inputRef}
-        type="search"
-        autoComplete="off"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
-      {searching ? (
-        <section className="search-results" aria-label="Search results" aria-live="polite">
-          {search.data ? (
-            search.data.length === 0 ? (
-              <p>No cities found</p>
+      <div className="search-panel">
+        <div className="search-header">
+          <h2 id="search-title">Choose a place</h2>
+          <button type="button" className="search-close" onClick={onClose}>
+            <Icon name="close" />
+            Close
+          </button>
+        </div>
+        <label className="search-label" htmlFor="search-input">
+          Search for a city
+        </label>
+        <div className="search-field">
+          <Icon name="search" />
+          <input
+            id="search-input"
+            ref={inputRef}
+            type="search"
+            autoComplete="off"
+            placeholder="Pune, Kochi, Guwahati…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        {searching ? (
+          <section className="search-results" aria-label="Search results" aria-live="polite">
+            {search.data ? (
+              search.data.length === 0 ? (
+                <p className="search-note">No cities found</p>
+              ) : (
+                <ol>{search.data.map(renderItem)}</ol>
+              )
+            ) : search.isError ? (
+              <p className="search-note">Search is unavailable. Try again.</p>
             ) : (
-              <ol>{search.data.map(renderItem)}</ol>
-            )
-          ) : search.isError ? (
-            <p>Search is unavailable. Try again.</p>
-          ) : (
-            <p>Searching…</p>
-          )}
-        </section>
-      ) : (
-        <>
-          {savedNewestFirst.length > 0 ? (
-            <section aria-labelledby="saved-title">
-              <h3 id="saved-title">Saved places</h3>
-              <ol>{savedNewestFirst.map(renderItem)}</ol>
-            </section>
-          ) : null}
-          {recent.length > 0 ? (
-            <section aria-labelledby="recent-title">
-              <h3 id="recent-title">Recent places</h3>
-              <ol>{recent.map(renderItem)}</ol>
-            </section>
-          ) : null}
-        </>
-      )}
+              <p className="search-note">Searching…</p>
+            )}
+          </section>
+        ) : (
+          <>
+            {savedNewestFirst.length > 0 ? (
+              <section aria-labelledby="saved-title">
+                <h3 id="saved-title">Saved places</h3>
+                <ol>{savedNewestFirst.map(renderItem)}</ol>
+              </section>
+            ) : null}
+            {recent.length > 0 ? (
+              <section aria-labelledby="recent-title">
+                <h3 id="recent-title">Recent places</h3>
+                <ol>{recent.map(renderItem)}</ol>
+              </section>
+            ) : null}
+            {savedNewestFirst.length === 0 && recent.length === 0 ? (
+              <p className="search-note">Type at least two letters of a city or town name.</p>
+            ) : null}
+          </>
+        )}
+      </div>
     </div>
   );
 }

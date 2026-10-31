@@ -1,0 +1,692 @@
+/* Shell */
+#root {
+  --page: 40rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+.forecast,
+.footer {
+  width: 100%;
+  max-width: var(--page);
+  margin-inline: auto;
+}
+
+.app-header {
+  --focus: var(--focus-on-dye);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block: var(--s3);
+  padding-inline: max(var(--gutter), calc((100% - var(--page)) / 2 + var(--gutter)));
+  background: var(--indigo);
+  color: var(--on-indigo);
+}
+
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.app-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+}
+
+.app-mark-ground {
+  fill: var(--madder);
+}
+
+.app-mark-motif {
+  fill: var(--on-madder);
+}
+
+.app-mark-heart {
+  fill: var(--turmeric);
+}
+
+.app-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: 2px;
+  font-weight: 650;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.btn-primary {
+  background: var(--turmeric);
+  color: var(--on-turmeric);
+}
+
+.btn-primary:hover {
+  background: var(--turmeric-hover);
+}
+
+.btn-quiet {
+  padding: 0;
+  background: transparent;
+  color: var(--on-indigo);
+  border: 1px solid var(--on-indigo-muted);
+}
+
+.btn-quiet:hover {
+  background: var(--on-indigo);
+  color: var(--indigo);
+}
+
+/* Forecast column */
+.forecast {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  row-gap: var(--s6);
+  padding-bottom: var(--s7);
+}
+
+.forecast > .hourly,
+.forecast > .stats,
+.forecast > .daily {
+  padding-inline: var(--gutter);
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.section-head h2 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.loading {
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(18rem, 44svh, 25rem);
+  padding: var(--s5) var(--gutter);
+  background: var(--indigo);
+  color: var(--on-indigo);
+  font-size: var(--text-lg);
+}
+
+/* Status banner */
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 3.5rem;
+  padding: var(--s3) var(--gutter);
+  font-weight: 550;
+}
+
+.forecast > .status-banner {
+  margin-bottom: calc(var(--s6) * -1);
+}
+
+.status-banner p {
+  flex: 1;
+}
+
+.status-offline {
+  background: var(--info-bg);
+  color: var(--info-ink);
+}
+
+.status-stale {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.status-error {
+  --focus: var(--on-madder);
+  background: var(--madder);
+  color: var(--on-madder);
+}
+
+.status-error button {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: 2px;
+  background: var(--on-madder);
+  color: var(--madder);
+  font-weight: 700;
+}
+
+/* Hero */
+.hero {
+  display: grid;
+}
+
+.hero-field {
+  display: flex;
+  flex-direction: column;
+  min-height: clamp(19rem, 46svh, 26rem);
+  padding: var(--s3) var(--gutter) var(--s5);
+  background: var(--indigo);
+  color: var(--on-indigo);
+}
+
+.hero-meta {
+  display: grid;
+  gap: var(--s1);
+}
+
+.hero-place {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.hero-admin {
+  font-weight: 400;
+  color: var(--on-indigo-muted);
+}
+
+.hero-updated {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--on-indigo-muted);
+}
+
+.hero-updated::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--turmeric);
+}
+
+.hero-temp {
+  margin-top: auto;
+  margin-left: -0.05em;
+  padding-top: var(--s5);
+  font-size: var(--text-numeral);
+  font-weight: 200;
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+}
+
+.hero-condition {
+  margin-top: var(--s4);
+  font-size: var(--text-xl);
+  font-weight: 500;
+}
+
+.hero-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hero-feels {
+  display: flex;
+  align-items: flex-end;
+  min-height: 6.5rem;
+  padding: var(--s4) var(--gutter);
+  background: var(--madder);
+  color: var(--on-madder);
+  font-size: var(--text-lg);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.hero-air {
+  display: grid;
+  align-content: end;
+  gap: var(--s2);
+  padding: var(--s4) var(--gutter);
+  background: var(--ground-deep);
+  color: var(--ink);
+}
+
+.hero-air div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--s2);
+}
+
+.hero-air dt {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.hero-air dd {
+  font-weight: 650;
+}
+
+/* Hourly rain print */
+.hourly-key {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
+
+.print-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.print-ground,
+.print-resist {
+  fill: var(--print-ground);
+}
+
+.print-ink {
+  fill: var(--print-ink);
+}
+
+.hourly-list {
+  position: relative;
+  display: flex;
+  gap: var(--s2);
+  margin-inline: calc(var(--gutter) * -1);
+  padding: 0 var(--gutter) var(--s3);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+}
+
+.hourly-item {
+  position: relative;
+  display: flex;
+  flex: 0 0 4.25rem;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  scroll-snap-align: start;
+  text-align: center;
+}
+
+.hourly-time {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.hourly-print {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  margin-block: var(--s1);
+  border: 1px solid var(--rule);
+}
+
+.hourly-rain {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--rain-text);
+  white-space: nowrap;
+}
+
+.hourly-temp {
+  font-size: var(--text-sm);
+}
+
+/* Today stats */
+.stats-list {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) repeat(2, minmax(0, 1fr));
+  border-block: 1px solid var(--rule);
+}
+
+.stats-list > div {
+  display: grid;
+  gap: var(--s1);
+  padding: var(--s3) var(--s3) var(--s3) 0;
+}
+
+.stats-list > div + div {
+  padding-left: var(--s3);
+  border-left: 1px solid var(--rule);
+}
+
+.stats-list dt {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
+
+.stats-list dd {
+  font-weight: 650;
+}
+
+/* 7-day list */
+.daily-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem;
+  grid-template-areas:
+    "day rain temps"
+    "cond rain temps";
+  align-items: center;
+  column-gap: var(--s3);
+  min-height: 4rem;
+  padding-block: var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+
+.daily-item:first-child {
+  border-top: 1px solid var(--rule);
+}
+
+.daily-day {
+  grid-area: day;
+  font-weight: 650;
+}
+
+.daily-condition {
+  grid-area: cond;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.daily-rain {
+  grid-area: rain;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-weight: 650;
+  color: var(--rain-text);
+  white-space: nowrap;
+}
+
+.daily-rain .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.daily-temps {
+  grid-area: temps;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+
+.daily-high {
+  min-width: 2.75rem;
+  padding: var(--s1) var(--s2);
+  font-weight: 700;
+  text-align: center;
+  background: var(--band-2);
+  color: var(--band-2-ink);
+}
+
+.daily-high[data-band="1"] {
+  background: var(--band-1);
+  color: var(--band-1-ink);
+}
+
+.daily-high[data-band="3"] {
+  background: var(--band-3);
+  color: var(--band-3-ink);
+}
+
+.daily-high[data-band="4"] {
+  background: var(--band-4);
+  color: var(--band-4-ink);
+}
+
+.daily-high[data-band="5"] {
+  background: var(--band-5);
+  color: var(--band-5-ink);
+}
+
+.daily-low {
+  min-width: 2rem;
+  text-align: right;
+  color: var(--ink-muted);
+}
+
+/* Footer */
+.footer {
+  padding: var(--s5) var(--gutter) var(--s6);
+  border-top: 1px solid var(--rule);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
+
+/* Search sheet */
+body:has(.search-sheet) {
+  overflow: hidden;
+}
+
+.search-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.search-panel {
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: var(--s3) var(--gutter) var(--s7);
+}
+
+.search-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 3.5rem;
+}
+
+.search-header h2 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.search-close,
+.search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: transparent;
+  font-weight: 600;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.search-close:hover,
+.search-toggle:hover {
+  background: var(--ground-deep);
+}
+
+.search-toggle {
+  color: var(--rain-text);
+}
+
+.search-label {
+  display: block;
+  margin: var(--s5) 0 var(--s2);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s3);
+  border: 2px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink-muted);
+}
+
+.search-field:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.search-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1.125rem;
+}
+
+.search-field input:focus-visible {
+  outline: none;
+}
+
+.search-field input::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+.search-sheet h3 {
+  margin: var(--s6) 0 var(--s2);
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.search-results {
+  margin-top: var(--s4);
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+
+.search-select {
+  flex: 1;
+  min-height: 3.25rem;
+  padding: 0 var(--s2);
+  border: 0;
+  background: transparent;
+  font-size: 1.0625rem;
+  text-align: left;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.search-select:hover {
+  background: var(--ground-deep);
+}
+
+.search-note {
+  margin-top: var(--s4);
+  color: var(--ink-muted);
+}
+
+/* Motion */
+@media (prefers-reduced-motion: no-preference) {
+  .search-sheet {
+    animation: sheet-in 240ms var(--ease-out);
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(1.5rem);
+      opacity: 0;
+    }
+  }
+}
+
+/* Wide screens: answer column beside the detail column */
+@media (min-width: 60rem) {
+  :root {
+    --gutter: 2rem;
+  }
+
+  #root {
+    --page: 75rem;
+  }
+
+  .forecast {
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    column-gap: var(--s7);
+    padding-top: var(--s5);
+    padding-inline: var(--gutter);
+  }
+
+  .forecast > .status-banner,
+  .forecast > .loading {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  .forecast > .hero {
+    grid-column: 1;
+    grid-row: span 3;
+    align-self: start;
+    position: sticky;
+    top: var(--s5);
+  }
+
+  .forecast > .hourly,
+  .forecast > .stats,
+  .forecast > .daily {
+    grid-column: 2;
+    padding-inline: 0;
+  }
+
+  .hero-field,
+  .hero-feels,
+  .hero-air {
+    padding-inline: var(--s5);
+  }
+
+  .daily-item {
+    grid-template-columns: 8.5rem minmax(0, 1fr) 5.5rem 6rem;
+    grid-template-areas: "day cond rain temps";
+    min-height: 3.5rem;
+  }
+
+  .daily-condition {
+    font-size: var(--text-md);
+  }
+
+  .hourly-list {
+    margin-inline: 0;
+    padding-inline: 0;
+    scroll-padding-inline: 0;
+  }
+}

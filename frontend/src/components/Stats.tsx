@@ -1,5 +1,5 @@
 import type { Current, DailyPoint } from "../api/types";
-import { compassDirection, formatClock } from "../lib/format";
+import { formatClock } from "../lib/format";
 
 export default function Stats({ current, today }: { current: Current; today?: DailyPoint }) {
   const rain = Math.round(current.precipMm * 10) / 10;
@@ -10,17 +10,7 @@ export default function Stats({ current, today }: { current: Current; today?: Da
       </h2>
       <dl className="stats-list">
         <div>
-          <dt>Humidity</dt>
-          <dd>{Math.round(current.humidityPct)}%</dd>
-        </div>
-        <div>
-          <dt>Wind</dt>
-          <dd>
-            {Math.round(current.windKph)} km/h {compassDirection(current.windDirDeg)}
-          </dd>
-        </div>
-        <div>
-          <dt>Rain</dt>
+          <dt>Rain now</dt>
           <dd>{rain} mm</dd>
         </div>
         {today ? (

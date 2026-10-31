@@ -8,3 +8,5 @@ __pycache__/
 .env
 *.egg-info/
 dist-test/
+.impeccable/review/
+.impeccable/mocks/

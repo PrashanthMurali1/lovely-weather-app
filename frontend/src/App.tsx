@@ -4,6 +4,7 @@ import DailyList from "./components/DailyList";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import HourlyStrip from "./components/HourlyStrip";
+import Icon from "./components/Icon";
 import SearchSheet from "./components/SearchSheet";
 import Stats from "./components/Stats";
 import StatusBanner from "./components/StatusBanner";
@@ -68,17 +69,32 @@ export default function App() {
   return (
     <>
       <header className="app-header">
-        <h1>India Weather</h1>
+        <h1 className="app-title">
+          <svg className="app-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect width="24" height="24" rx="2" className="app-mark-ground" />
+            <g className="app-mark-motif" transform="translate(12 12)">
+              {[0, 90, 180, 270].map((a) => (
+                <path key={a} d="M0 -2.2Q3 -5.4 0 -8.6Q-3 -5.4 0 -2.2Z" transform={`rotate(${a})`} />
+              ))}
+            </g>
+            <circle cx="12" cy="12" r="1.6" className="app-mark-heart" />
+          </svg>
+          India Weather
+        </h1>
         <div className="app-actions">
-          <button type="button" onClick={() => setSearchOpen(true)}>
-            Search places
+          <button type="button" className="btn btn-quiet" title="Use my location" onClick={locateMe}>
+            <Icon name="locate" />
+            <span className="visually-hidden">Use my location</span>
           </button>
-          <button type="button" onClick={locateMe}>
-            Use my location
+          <button type="button" className="btn btn-primary" onClick={() => setSearchOpen(true)}>
+            <Icon name="search" />
+            <span>
+              Search<span className="visually-hidden"> places</span>
+            </span>
           </button>
         </div>
       </header>
-      <main>
+      <main className="forecast">
         <StatusBanner
           offline={!online}
           stale={data?.stale ?? false}
@@ -89,8 +105,8 @@ export default function App() {
         {data ? (
           <>
             <Hero place={place} current={data.current} fetchedAt={data.fetchedAt} />
-            <Stats current={data.current} today={data.daily[0]} />
             <HourlyStrip hourly={upcoming.length > 0 ? upcoming : data.hourly.slice(0, 24)} />
+            <Stats current={data.current} today={data.daily[0]} />
             <DailyList daily={data.daily.slice(0, 7)} />
           </>
         ) : forecast.isError ? null : (

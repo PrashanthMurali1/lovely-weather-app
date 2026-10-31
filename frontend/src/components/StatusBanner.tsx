@@ -1,5 +1,6 @@
 import { ApiError } from "../api/client";
 import { formatFetchedTime } from "../lib/format";
+import Icon from "./Icon";
 
 interface Props {
   offline: boolean;
@@ -21,6 +22,7 @@ export default function StatusBanner({ offline, stale, fetchedAt, error, onRetry
   if (error) {
     return (
       <div className="status-banner status-error" role="alert">
+        <Icon name="alert" />
         <p>{friendlyMessage(error)}</p>
         <button type="button" onClick={onRetry}>
           Retry
@@ -32,6 +34,7 @@ export default function StatusBanner({ offline, stale, fetchedAt, error, onRetry
     const when = fetchedAt ? formatFetchedTime(fetchedAt) : "earlier";
     return (
       <div className="status-banner status-offline" role="status">
+        <Icon name="offline" />
         <p>Offline, showing data from {when}.</p>
       </div>
     );
@@ -39,6 +42,7 @@ export default function StatusBanner({ offline, stale, fetchedAt, error, onRetry
   if (stale) {
     return (
       <div className="status-banner status-stale" role="status">
+        <Icon name="clock" />
         <p>Showing older data — the weather service is unavailable.</p>
       </div>
     );
