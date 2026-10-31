@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -61,7 +62,11 @@ def env(tmp_path):
     cache = Cache(p, now=clock)
     budget = Budget(p, soft_limit=settings.daily_budget_soft_limit, now=clock)
     provider = FakeProvider()
-    svc = WeatherService(provider, cache, budget, settings, now=clock)
+    mono = [1000.0]
+    svc = WeatherService(
+        provider, cache, budget, settings, now=clock, monotonic=lambda: mono[0]
+    )
+    svc.mono = mono
     return svc, provider, box, cache, budget
 
 
@@ -171,3 +176,101 @@ async def test_search_failure_no_cache_raises(env):
     prov.fail = UpstreamRateLimited()
     with pytest.raises(UpstreamRateLimited):
         await svc.search("chennai")
+
+
+async def test_cache_write_failure_still_returns_fresh_result(env, monkeypatch):
+    svc, prov, _, cache, _ = env
+
+    def boom(*a, **k):
+        raise sqlite3.OperationalError("disk I/O error")
+
+    monkeypatch.setattr(cache, "set", boom)
+    f = await svc.get_forecast(13.08, 80.27)
+    assert f.stale is False
+    assert len(prov.forecast_calls) == 1
+
+
+async def test_negative_zero_coordinates_share_key(env):
+    svc, prov, *_ = env
+    await svc.get_forecast(-0.001, 0.001)
+    await svc.get_forecast(0.001, -0.001)
+    assert len(prov.forecast_calls) == 1
+    lat, lon, _ = prov.forecast_calls[0]
+    assert str(lat) == "0.0" and str(lon) == "0.0"
+    assert svc.cache.get("forecast:ecmwf_ifs025:0.00:0.00") is not None
+
+
+async def _expire(svc, box):
+    box[0] += timedelta(seconds=svc.settings.forecast_ttl_seconds + 1)
+
+
+async def test_cooldown_concurrent_failures_call_upstream_once(env):
+    svc, prov, box, _, budget = env
+    await svc.get_forecast(13.08, 80.27)
+    await _expire(svc, box)
+    before = budget.count_today()
+    prov.fail = UpstreamUnavailable("down")
+    results = await asyncio.gather(*[svc.get_forecast(13.08, 80.27) for _ in range(10)])
+    assert all(r.stale is True for r in results)
+    assert len(prov.forecast_calls) == 2  # 1 initial + 1 failing
+    assert budget.count_today() == before + 1
+
+
+async def test_cooldown_concurrent_failures_no_stale_raises_once_upstream(env):
+    svc, prov, _, _, budget = env
+    prov.fail = UpstreamUnavailable("down")
+    results = await asyncio.gather(
+        *[svc.get_forecast(13.08, 80.27) for _ in range(10)], return_exceptions=True
+    )
+    assert all(isinstance(r, UpstreamUnavailable) for r in results)
+    assert len(prov.forecast_calls) == 1
+    assert budget.count_today() == 1
+
+
+async def test_cooldown_elapsed_calls_upstream_again(env):
+    svc, prov, box, *_ = env
+    await svc.get_forecast(13.08, 80.27)
+    await _expire(svc, box)
+    prov.fail = UpstreamRateLimited()
+    await svc.get_forecast(13.08, 80.27)
+    await svc.get_forecast(13.08, 80.27)
+    assert len(prov.forecast_calls) == 2
+    svc.mono[0] += svc.settings.failure_cooldown_seconds + 1
+    await svc.get_forecast(13.08, 80.27)
+    assert len(prov.forecast_calls) == 3
+
+
+async def test_success_clears_failure_record(env):
+    svc, prov, box, *_ = env
+    await svc.get_forecast(13.08, 80.27)
+    await _expire(svc, box)
+    prov.fail = UpstreamUnavailable("down")
+    await svc.get_forecast(13.08, 80.27)
+    assert svc._failures
+    svc.mono[0] += svc.settings.failure_cooldown_seconds + 1
+    prov.fail = None
+    await svc.get_forecast(13.08, 80.27)
+    assert svc._failures == {}
+
+
+async def test_failure_records_are_pruned(env):
+    svc, prov, *_ = env
+    prov.fail = UpstreamUnavailable("down")
+    for i in range(5):
+        with pytest.raises(UpstreamUnavailable):
+            await svc.search(f"query {i}")
+    assert len(svc._failures) == 5
+    svc.mono[0] += svc.settings.failure_cooldown_seconds + 1
+    with pytest.raises(UpstreamUnavailable):
+        await svc.search("another")
+    assert list(svc._failures) == ["search:another"]
+
+
+async def test_search_cooldown_skips_upstream(env):
+    svc, prov, _, _, budget = env
+    prov.fail = UpstreamUnavailable("down")
+    for _ in range(3):
+        with pytest.raises(UpstreamUnavailable):
+            await svc.search("chennai")
+    assert len(prov.search_calls) == 1
+    assert budget.count_today() == 1

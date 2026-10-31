@@ -8,6 +8,7 @@ router = APIRouter(prefix="/api")
 
 FORECAST_CACHE_CONTROL = "public, max-age=300, stale-while-revalidate=600"
 SEARCH_CACHE_CONTROL = "public, max-age=86400"
+MAX_QUERY_LENGTH = 100
 
 
 def _invalid(field: str, msg: str) -> RequestValidationError:
@@ -19,6 +20,8 @@ async def search(request: Request, response: Response, q: str = Query(...)):
     nq = normalize_query(q)
     if len(nq) < 2:
         raise _invalid("q", "must be at least 2 characters")
+    if len(nq) > MAX_QUERY_LENGTH:
+        raise _invalid("q", f"must be at most {MAX_QUERY_LENGTH} characters")
     places = await request.app.state.service.search(nq)
     response.headers["Cache-Control"] = SEARCH_CACHE_CONTROL
     return {"results": [p.model_dump(by_alias=True) for p in places]}

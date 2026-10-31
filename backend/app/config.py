@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     stale_retention_seconds: int = 86400
     daily_budget_soft_limit: int = 8000
     upstream_timeout_seconds: float = 8.0
+    failure_cooldown_seconds: int = 20
     allowed_origins: list[str] = ["http://localhost:5173"]
 
 

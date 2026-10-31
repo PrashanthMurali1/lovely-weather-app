@@ -110,6 +110,11 @@ def create_app(
             headers={"Retry-After": str(exc.retry_after)},
         )
 
+    @app.exception_handler(Exception)
+    async def _internal(request: Request, exc: Exception):
+        log.exception("unhandled error", exc_info=exc)
+        return _error(500, "internal_error", "Something went wrong.")
+
     return app
 
 

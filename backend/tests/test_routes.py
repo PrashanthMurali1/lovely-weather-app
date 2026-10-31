@@ -144,3 +144,48 @@ def test_cors_allows_configured_origin(client):
 def test_lifespan_runs_with_fake_service(svc):
     with TestClient(create_app(service=svc, settings=svc.settings)) as c:
         assert c.get("/api/health").status_code == 200
+
+
+class RaisingService(FakeService):
+    async def get_forecast(self, lat, lon, model):
+        raise RuntimeError("secret internals")
+
+
+def test_unhandled_exception_is_generic_500():
+    svc = RaisingService()
+    c = TestClient(create_app(service=svc, settings=svc.settings), raise_server_exceptions=False)
+    r = c.get("/api/forecast", params={"lat": 13.08, "lon": 80.28})
+    assert r.status_code == 500
+    assert r.json() == {"error": {"code": "internal_error", "message": "Something went wrong."}}
+    assert "secret" not in r.text
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"lat": "nan", "lon": 80},
+        {"lat": "inf", "lon": 80},
+        {"lat": 13, "lon": "-inf"},
+        {"lon": 80},
+        {"lat": 13},
+        {"lat": 13, "lon": 80, "models": "ecmwf_ifs025,"},
+        {"lat": 13, "lon": 80, "models": ""},
+    ],
+)
+def test_forecast_invalid_params_422_no_service_call(client, svc, params):
+    r = client.get("/api/forecast", params=params)
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "invalid_request"
+    assert svc.forecast_calls == []
+
+
+@pytest.mark.parametrize("params", [{}, {"q": "a"}, {"q": "   "}, {"q": "x" * 101}])
+def test_search_invalid_params_422_no_service_call(client, svc, params):
+    r = client.get("/api/search", params=params)
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "invalid_request"
+    assert svc.search_calls == []
+
+
+def test_search_100_chars_ok(client):
+    assert client.get("/api/search", params={"q": "x" * 100}).status_code == 200
