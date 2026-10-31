@@ -5,6 +5,7 @@ dist/
 .venv/
 __pycache__/
 .pytest_cache/
+.pytest_tmp/
 .env
 *.egg-info/
 dist-test/

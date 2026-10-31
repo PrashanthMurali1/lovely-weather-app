@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "superpowers@anthropic-plugin-directory": true,
+    "impeccable@impeccable": true
+  }
+}

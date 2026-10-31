@@ -18,6 +18,7 @@ import Hero from "../src/components/Hero";
 import HourlyStrip from "../src/components/HourlyStrip";
 import SearchSheet from "../src/components/SearchSheet";
 import StatusBanner from "../src/components/StatusBanner";
+import Stats from "../src/components/Stats";
 
 const chennai: Place = { id: 1264527, name: "Chennai", admin: "Tamil Nadu", lat: 13.08, lon: 80.28 };
 const cheran: Place = { id: 5, name: "Chengalpattu", admin: "Tamil Nadu", lat: 12.69, lon: 79.98 };
@@ -79,6 +80,12 @@ afterEach(() => {
 });
 
 describe("Hero", () => {
+  it("shows the provided daily range and distinguishes forecast time from fetch time", () => {
+    render(<Hero place={chennai} current={forecast.current} fetchedAt={forecast.fetchedAt} today={daily(0)} />);
+    expect(screen.getByText(/High 32°/)).toBeInTheDocument();
+    expect(screen.getByText(/Low 25°/)).toBeInTheDocument();
+    expect(screen.getByText(/Forecast as of 2:00 PM/)).toBeInTheDocument();
+  });
   it("shows temperature and condition label", () => {
     render(<Hero place={chennai} current={forecast.current} fetchedAt={forecast.fetchedAt} />);
     expect(screen.getByText("31°", { selector: ".hero-temp" })).toBeInTheDocument();
@@ -105,6 +112,14 @@ describe("HourlyStrip", () => {
 });
 
 describe("DailyList", () => {
+  it("keeps condition and rain visible when every day's temperatures are identical", () => {
+    const { container } = render(<DailyList daily={[daily(0, { tempMinC: 25, tempMaxC: 25, precipProbPct: null, precipSumMm: 2.5 })]} />);
+    expect(screen.getByText("Partly cloudy")).toBeVisible();
+    expect(screen.getByText("2.5 mm")).toBeVisible();
+    const range = container.querySelector(".temperature-range-fill");
+    expect(range).not.toBeNull();
+    expect(range?.getAttribute("style")).not.toMatch(/NaN|Infinity/);
+  });
   it("renders 7 rows and uses precipSumMm when probability is null", () => {
     const d = Array.from({ length: 7 }, (_, i) => daily(i));
     d[3] = daily(3, { precipProbPct: null, precipSumMm: 4.26 });
@@ -161,6 +176,16 @@ describe("Footer", () => {
 });
 
 describe("SearchSheet", () => {
+  it("offers location access in search and wraps keyboard focus", async () => {
+    const onLocate = vi.fn();
+    wrap(<SearchSheet open onClose={() => {}} onSelect={() => {}} onLocate={onLocate} />);
+    const locate = screen.getByRole("button", { name: "Use my location" });
+    await userEvent.click(locate);
+    expect(onLocate).toHaveBeenCalledOnce();
+    locate.focus();
+    await userEvent.tab();
+    expect(screen.getByRole("button", { name: /Close/ })).toHaveFocus();
+  });
   it("lists results and selects one", async () => {
     vi.mocked(searchPlaces).mockResolvedValue([cheran]);
     const onSelect = vi.fn();
@@ -205,6 +230,25 @@ describe("SearchSheet", () => {
 });
 
 describe("App", () => {
+  it("makes the forecast inert during search and restores focus on close", async () => {
+    vi.mocked(getForecast).mockResolvedValue(forecast);
+    wrap(<App />);
+    await screen.findByText("31°", { selector: ".hero-temp" });
+    const search = screen.getByRole("button", { name: "Search places" });
+    await userEvent.click(search);
+    expect(document.querySelector(".app-content")).toHaveProperty("inert", true);
+    await userEvent.keyboard("{Escape}");
+    expect(search).toHaveFocus();
+    expect(document.querySelector(".app-content")).toHaveProperty("inert", false);
+  });
+  it("keeps all 48 hourly entries accessible, including the final hour", async () => {
+    const full = Array.from({ length: 48 }, (_, i) => hourly({ time: new Date(Date.UTC(2026, 9, 31, 14 + i)).toISOString().slice(0, 16) }));
+    vi.mocked(getForecast).mockResolvedValue({ ...forecast, hourly: full });
+    wrap(<App />);
+    const region = await screen.findByRole("region", { name: /Hourly/ });
+    expect(within(region).getAllByRole("listitem")).toHaveLength(48);
+    expect(within(region).getAllByRole("listitem")[47].querySelector("time")).toHaveAttribute("datetime", "2026-11-02T13:00");
+  });
   it("renders the Chennai forecast on first load", async () => {
     vi.mocked(getForecast).mockResolvedValue(forecast);
     wrap(<App />);
@@ -247,5 +291,14 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: /My location/ })).toBeInTheDocument();
     expect(getForecast).toHaveBeenLastCalledWith(19.08, 72.88);
     expect(localStorage.getItem("places.recent")).toBeNull();
+  });
+});
+
+describe("Conditions", () => {
+  it("keeps humidity and wind and does not draw a fictional sun for invalid solar data", () => {
+    const { container } = render(<Stats current={forecast.current} today={daily(0, { sunrise: "invalid" })} />);
+    expect(screen.getByText("70%")).toBeInTheDocument();
+    expect(screen.getByText(/12/)).toBeInTheDocument();
+    expect(container.querySelector(".sun-position")).toBeNull();
   });
 });

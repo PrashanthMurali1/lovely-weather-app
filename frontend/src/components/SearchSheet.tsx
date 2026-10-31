@@ -4,17 +4,19 @@ import type { Place } from "../api/types";
 import { useSavedPlaces } from "../hooks/useSavedPlaces";
 import { useSearch } from "../hooks/useSearch";
 import Icon from "./Icon";
-import PrintBand from "./PrintBand";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSelect: (p: Place) => void;
+  onLocate?: () => void;
+  locating?: boolean;
+  locationMessage?: string;
 }
 
 const label = (p: Place) => (p.admin ? `${p.name}, ${p.admin}` : p.name);
 
-export default function SearchSheet({ open, onClose, onSelect }: Props) {
+export default function SearchSheet({ open, onClose, onSelect, onLocate, locating, locationMessage }: Props) {
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -24,10 +26,14 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
   useEffect(() => {
     if (!open) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     inputRef.current?.focus();
     return () => {
       setQ("");
-      opener?.focus();
+      document.body.style.overflow = overflow;
+      // Parent removes inert in its effect before focus returns to the opener.
+      queueMicrotask(() => opener?.focus());
     };
   }, [open]);
 
@@ -83,6 +89,7 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
   const savedNewestFirst = [...saved].reverse();
 
   return (
+    <div className="search-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
     <div
       className="search-sheet"
       role="dialog"
@@ -99,7 +106,6 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
             Close
           </button>
         </div>
-        <PrintBand />
       </div>
       <div className="search-panel">
         <label className="search-label" htmlFor="search-input">
@@ -117,6 +123,8 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
+        {onLocate ? <button className="search-locate btn" type="button" onClick={onLocate} disabled={locating} aria-busy={locating}><Icon name="locate" />{locating ? "Finding your location…" : "Use my location"}</button> : null}
+        {locationMessage ? <p className="search-note" role="status">{locationMessage}</p> : null}
         {searching ? (
           <section className="search-results" aria-label="Search results" aria-live="polite">
             {search.data ? (
@@ -151,6 +159,7 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
           </>
         )}
       </div>
+    </div>
     </div>
   );
 }

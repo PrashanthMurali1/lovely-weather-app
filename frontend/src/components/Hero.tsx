@@ -1,45 +1,21 @@
-import type { Current, Place } from "../api/types";
-import { compassDirection, formatFetchedWhen } from "../lib/format";
+﻿import type { Current, DailyPoint, Place } from "../api/types";
+import { formatClock, formatFetchedWhen } from "../lib/format";
 import { describeWeather } from "../lib/weatherCodes";
 
-interface Props {
-  place: Place;
-  current: Current;
-  fetchedAt: string;
-}
+interface Props { place: Place; current: Current; fetchedAt: string; today?: DailyPoint }
 
-export default function Hero({ place, current, fetchedAt }: Props) {
-  const { label, icon } = describeWeather(current.weatherCode, current.isDay);
+export default function Hero({ place, current, fetchedAt, today }: Props) {
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <div className="hero-field">
-        <div className="hero-meta">
-          <h2 id="hero-title" className="hero-place">
-            {place.name}
-            {place.admin ? <span className="hero-admin">, {place.admin}</span> : null}
-          </h2>
-          <p className="hero-updated">Updated {formatFetchedWhen(fetchedAt)} IST</p>
-        </div>
-        <p className="hero-temp">{Math.round(current.tempC)}°</p>
-        <p className="hero-condition" data-icon={icon}>
-          {label}
-        </p>
+      <h2 id="hero-title" className="hero-place">{place.name}</h2>
+      <p className="hero-admin">{place.admin ? `${place.admin}, India` : "Your current location"}</p>
+      <p className="hero-temp">{Math.round(current.tempC)}°</p>
+      <p className="hero-condition">{describeWeather(current.weatherCode, current.isDay).label}</p>
+      <div className="hero-summary">
+        {today ? <p>High {Math.round(today.tempMaxC)}° <span aria-hidden="true">·</span> Low {Math.round(today.tempMinC)}°</p> : null}
+        <p>Feels like {Math.round(current.feelsLikeC)}°</p>
       </div>
-      <div className="hero-tiles">
-        <p className="hero-feels">Feels like {Math.round(current.feelsLikeC)}°</p>
-        <dl className="hero-air">
-          <div>
-            <dt>Humidity</dt>
-            <dd>{Math.round(current.humidityPct)}%</dd>
-          </div>
-          <div>
-            <dt>Wind</dt>
-            <dd>
-              {Math.round(current.windKph)} km/h {compassDirection(current.windDirDeg)}
-            </dd>
-          </div>
-        </dl>
-      </div>
+      <p className="hero-updated">Forecast as of {formatClock(current.time)} IST <span aria-hidden="true">·</span> Updated {formatFetchedWhen(fetchedAt)} IST</p>
     </section>
   );
 }

@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Place } from "./api/types";
 import DailyList from "./components/DailyList";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import HourlyStrip from "./components/HourlyStrip";
 import Icon from "./components/Icon";
-import PrintBand from "./components/PrintBand";
+import WeatherScene from "./components/WeatherScene";
+import WeatherIcon from "./components/WeatherIcon";
 import SearchSheet from "./components/SearchSheet";
 import Stats from "./components/Stats";
 import StatusBanner from "./components/StatusBanner";
@@ -35,8 +36,20 @@ export default function App() {
   const { recent } = useSavedPlaces();
   const [place, setPlace] = useState<Place>(() => recent[0] ?? DEFAULT_PLACE);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationMessage, setLocationMessage] = useState("");
+  const pageRef = useRef<HTMLDivElement>(null);
   const online = useOnline();
   const forecast = useForecast(place);
+  useEffect(() => {
+    if (pageRef.current) pageRef.current.inert = searchOpen;
+  }, [searchOpen]);
+  useEffect(() => {
+    const update = () => { document.documentElement.dataset.pageHidden = String(document.hidden); };
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const selectPlace = useCallback((p: Place) => {
@@ -45,49 +58,54 @@ export default function App() {
   }, []);
 
   const locateMe = () => {
+    if (locating) return;
+    const failed = () => {
+      setLocating(false);
+      setLocationMessage("Couldn't get your location. Your selected city is unchanged; you can search instead.");
+    };
     try {
-      if (!navigator.geolocation) return;
+      if (!navigator.geolocation) { failed(); return; }
+      setLocating(true);
+      setLocationMessage("Finding your location…");
       navigator.geolocation.getCurrentPosition(
-        (pos) =>
+        (pos) => {
           setPlace({
             id: -1,
             name: "My location",
             admin: null,
             lat: round2(pos.coords.latitude),
             lon: round2(pos.coords.longitude),
-          }),
-        () => {},
+          });
+          setLocating(false);
+          setLocationMessage("");
+          setSearchOpen(false);
+        },
+        failed,
+        { timeout: 10_000, maximumAge: 300_000 },
       );
     } catch {
-      // unsupported or blocked: keep the current place
+      failed();
     }
   };
 
   const data = forecast.data;
-  const nowHour = data ? data.current.time.slice(0, 13) : "";
-  const upcoming = data ? data.hourly.filter((h) => h.time.slice(0, 13) >= nowHour).slice(0, 24) : [];
+  const today = data?.daily.find(d => d.date === data.current.time.slice(0, 10));
 
   return (
     <>
+      <WeatherScene current={data?.current} today={today} />
+      <div className="app-content" ref={pageRef}>
       <header className="app-header">
         <h1 className="app-title">
-          <svg className="app-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <rect width="24" height="24" rx="2" className="app-mark-ground" />
-            <g className="app-mark-motif" transform="translate(12 12)">
-              {[0, 90, 180, 270].map((a) => (
-                <path key={a} d="M0 -2.2Q3 -5.4 0 -8.6Q-3 -5.4 0 -2.2Z" transform={`rotate(${a})`} />
-              ))}
-            </g>
-            <circle cx="12" cy="12" r="1.6" className="app-mark-heart" />
-          </svg>
+          <WeatherIcon code={0} />
           India Weather
         </h1>
         <div className="app-actions">
-          <button type="button" className="btn btn-quiet" title="Use my location" onClick={locateMe}>
+          <button type="button" className="btn btn-quiet" title="Use my location" onClick={locateMe} disabled={locating} aria-busy={locating}>
             <Icon name="locate" />
             <span className="visually-hidden">Use my location</span>
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => setSearchOpen(true)}>
+          <button type="button" className="btn btn-primary" aria-label="Search places" onClick={() => setSearchOpen(true)}>
             <Icon name="search" />
             <span>
               Search<span className="visually-hidden"> places</span>
@@ -96,6 +114,7 @@ export default function App() {
         </div>
       </header>
       <main className="forecast">
+        {locationMessage ? <p className="location-message" role="status">{locationMessage}</p> : null}
         <StatusBanner
           offline={!online}
           stale={data?.stale ?? false}
@@ -105,27 +124,28 @@ export default function App() {
         />
         {data ? (
           <>
-            <Hero place={place} current={data.current} fetchedAt={data.fetchedAt} />
-            <HourlyStrip hourly={upcoming.length > 0 ? upcoming : data.hourly.slice(0, 24)} />
-            <Stats current={data.current} today={data.daily[0]} />
-            <DailyList daily={data.daily.slice(0, 7)} />
+            <Hero place={place} current={data.current} fetchedAt={data.fetchedAt} today={today} />
+            <HourlyStrip hourly={data.hourly} daily={data.daily} />
+            <div className="forecast-details">
+              <DailyList daily={data.daily.slice(0, 7)} />
+              <Stats current={data.current} today={today} />
+            </div>
           </>
         ) : forecast.isError ? (
           <div className="empty-field">
-            <PrintBand />
+            <WeatherIcon code={3} />
             <p className="empty-title">No forecast yet</p>
             <p className="empty-body">
               We couldn’t load the weather for {place.name}. Tap Retry to try again.
             </p>
           </div>
         ) : (
-          <p className="loading" role="status">
-            Loading forecast…
-          </p>
+          <div className="loading" role="status"><p>Loading forecast…</p><div className="loading-shape" aria-hidden="true" /><div className="loading-line" aria-hidden="true" /></div>
         )}
       </main>
-      <Footer attribution={data?.attribution ?? FALLBACK_ATTRIBUTION} />
-      <SearchSheet open={searchOpen} onClose={closeSearch} onSelect={selectPlace} />
+      <Footer attribution={data?.attribution ?? FALLBACK_ATTRIBUTION} model={data?.model} />
+      </div>
+      <SearchSheet open={searchOpen} onClose={closeSearch} onSelect={selectPlace} onLocate={locateMe} locating={locating} locationMessage={locationMessage} />
     </>
   );
 }

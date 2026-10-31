@@ -6,6 +6,7 @@ import { createQueryClient } from "./lib/queryClient";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/components.css";
+import "./styles/atmosphere.css";
 import "./pwa";
 
 const queryClient = createQueryClient();

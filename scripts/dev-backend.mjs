@@ -1,9 +1,9 @@
 // Starts the FastAPI dev server from the backend virtualenv.
-// Port: BACKEND_PORT (default 8000); vite.config.ts reads the same variable for its /api proxy.
+// Port: BACKEND_PORT (default 8001); vite.config.ts reads the same variable for its /api proxy.
 import { spawn, spawnSync } from "node:child_process";
 import { backendDir, venvPython } from "./venv-python.mjs";
 
-const port = process.env.BACKEND_PORT || "8000";
+const port = process.env.BACKEND_PORT || "8001";
 const posix = process.platform !== "win32";
 const child = spawn(venvPython(), ["-m", "uvicorn", "app.main:app", "--reload", "--port", port], {
   cwd: backendDir,
