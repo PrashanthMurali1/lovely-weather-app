@@ -1,5 +1,5 @@
 import type { Current, Place } from "../api/types";
-import { compassDirection, formatFetchedTime } from "../lib/format";
+import { compassDirection, formatFetchedWhen } from "../lib/format";
 import { describeWeather } from "../lib/weatherCodes";
 
 interface Props {
@@ -18,7 +18,7 @@ export default function Hero({ place, current, fetchedAt }: Props) {
             {place.name}
             {place.admin ? <span className="hero-admin">, {place.admin}</span> : null}
           </h2>
-          <p className="hero-updated">Updated {formatFetchedTime(fetchedAt)} IST</p>
+          <p className="hero-updated">Updated {formatFetchedWhen(fetchedAt)} IST</p>
         </div>
         <p className="hero-temp">{Math.round(current.tempC)}°</p>
         <p className="hero-condition" data-icon={icon}>

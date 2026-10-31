@@ -30,3 +30,21 @@ export function formatFetchedTime(fetchedAt: string): string {
   if (Number.isNaN(d.getTime())) return fetchedAt;
   return d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 }
+
+const istDay = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+
+/** Fetch time in IST, prefixed with the day when it is not from today (IST): "yesterday 2:12 pm", "Fri 2:12 pm". */
+export function formatFetchedWhen(fetchedAt: string, now: Date = new Date()): string {
+  const d = new Date(fetchedAt);
+  if (Number.isNaN(d.getTime())) return fetchedAt;
+  const time = formatFetchedTime(fetchedAt);
+  const day = istDay(d);
+  const today = istDay(now);
+  if (day === today) return time;
+  const daysAgo = Math.round((Date.parse(today) - Date.parse(day)) / 86_400_000);
+  if (daysAgo === 1) return `yesterday ${time}`;
+  if (daysAgo > 1 && daysAgo < 7) {
+    return `${d.toLocaleDateString("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" })} ${time}`;
+  }
+  return `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })} ${time}`;
+}

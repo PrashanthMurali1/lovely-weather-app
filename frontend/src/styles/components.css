@@ -134,6 +134,42 @@
   font-size: var(--text-lg);
 }
 
+.empty-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-height: clamp(22rem, 62svh, 34rem);
+  padding: var(--s3) var(--gutter) var(--s6);
+  background: var(--indigo);
+  color: var(--on-indigo);
+}
+
+.empty-field .print-band {
+  margin-bottom: auto;
+}
+
+.empty-title {
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.empty-body {
+  max-width: 32ch;
+  font-size: var(--text-lg);
+  color: var(--on-indigo-muted);
+}
+
+.print-band {
+  display: block;
+  flex: none;
+}
+
+.print-band-motif {
+  fill: var(--on-indigo-muted);
+}
+
 /* Status banner */
 .status-banner {
   display: flex;
@@ -148,8 +184,14 @@
   margin-bottom: calc(var(--s6) * -1);
 }
 
-.status-banner p {
+.status-banner > p,
+.status-text {
   flex: 1;
+}
+
+.status-detail {
+  font-size: var(--text-sm);
+  font-weight: 400;
 }
 
 .status-offline {
@@ -296,13 +338,20 @@
   overflow: hidden;
 }
 
-.print-ground,
-.print-resist {
+.print-ground {
   fill: var(--print-ground);
 }
 
 .print-ink {
   fill: var(--print-ink);
+}
+
+.print-field {
+  fill: var(--print-field);
+}
+
+.print-resist {
+  fill: var(--print-resist);
 }
 
 .hourly-list {
@@ -322,7 +371,7 @@
 .hourly-item {
   position: relative;
   display: flex;
-  flex: 0 0 4.25rem;
+  flex: 0 0 clamp(3.25rem, (100% - 5 * var(--s2)) / 5.25, 4.25rem);
   flex-direction: column;
   align-items: center;
   gap: var(--s1);
@@ -492,10 +541,20 @@ body:has(.search-sheet) {
   color: var(--ink);
 }
 
+.search-top {
+  --focus: var(--focus-on-dye);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-inline: max(var(--gutter), calc((100% - 40rem) / 2 + var(--gutter)));
+  background: var(--indigo);
+  color: var(--on-indigo);
+}
+
 .search-panel {
   max-width: 40rem;
   margin-inline: auto;
-  padding: var(--s3) var(--gutter) var(--s7);
+  padding: 0 var(--gutter) var(--s7);
 }
 
 .search-header {
@@ -503,13 +562,17 @@ body:has(.search-sheet) {
   align-items: center;
   justify-content: space-between;
   gap: var(--s3);
-  min-height: 3.5rem;
+  min-height: 4.25rem;
 }
 
 .search-header h2 {
   font-size: var(--text-xl);
   font-weight: 700;
   letter-spacing: -0.015em;
+}
+
+.search-top .print-band {
+  margin-bottom: var(--s2);
 }
 
 .search-close,
@@ -528,13 +591,33 @@ body:has(.search-sheet) {
   transition: background-color 160ms var(--ease-out);
 }
 
-.search-close:hover,
-.search-toggle:hover {
-  background: var(--ground-deep);
+.search-close {
+  color: var(--on-indigo);
+  border-color: var(--on-indigo-muted);
 }
 
-.search-toggle {
-  color: var(--rain-text);
+.search-close:hover {
+  background: var(--on-indigo);
+  color: var(--indigo);
+}
+
+.search-save {
+  border-color: var(--turmeric);
+  background: var(--turmeric);
+  color: var(--on-turmeric);
+}
+
+.search-save:hover {
+  border-color: var(--turmeric-hover);
+  background: var(--turmeric-hover);
+}
+
+.search-remove {
+  color: var(--remove-text);
+}
+
+.search-remove:hover {
+  background: var(--ground-deep);
 }
 
 .search-label {
@@ -648,7 +731,8 @@ body:has(.search-sheet) {
   }
 
   .forecast > .status-banner,
-  .forecast > .loading {
+  .forecast > .loading,
+  .forecast > .empty-field {
     grid-column: 1 / -1;
     margin-bottom: 0;
   }
@@ -675,13 +759,21 @@ body:has(.search-sheet) {
   }
 
   .daily-item {
-    grid-template-columns: 8.5rem minmax(0, 1fr) 5.5rem 6rem;
-    grid-template-areas: "day cond rain temps";
+    grid-template-columns: 8.5rem 6rem 5.5rem minmax(0, 1fr);
+    grid-template-areas: "day temps rain cond";
     min-height: 3.5rem;
   }
 
   .daily-condition {
     font-size: var(--text-md);
+  }
+
+  .daily-temps {
+    justify-content: flex-start;
+  }
+
+  .hourly-item {
+    flex-basis: clamp(3.25rem, (100% - 9 * var(--s2)) / 9.5, 4.25rem);
   }
 
   .hourly-list {

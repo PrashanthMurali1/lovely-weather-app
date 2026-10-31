@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import HourlyStrip from "./components/HourlyStrip";
 import Icon from "./components/Icon";
+import PrintBand from "./components/PrintBand";
 import SearchSheet from "./components/SearchSheet";
 import Stats from "./components/Stats";
 import StatusBanner from "./components/StatusBanner";
@@ -109,7 +110,15 @@ export default function App() {
             <Stats current={data.current} today={data.daily[0]} />
             <DailyList daily={data.daily.slice(0, 7)} />
           </>
-        ) : forecast.isError ? null : (
+        ) : forecast.isError ? (
+          <div className="empty-field">
+            <PrintBand />
+            <p className="empty-title">No forecast yet</p>
+            <p className="empty-body">
+              We couldn’t load the weather for {place.name}. Tap Retry to try again.
+            </p>
+          </div>
+        ) : (
           <p className="loading" role="status">
             Loading forecast…
           </p>

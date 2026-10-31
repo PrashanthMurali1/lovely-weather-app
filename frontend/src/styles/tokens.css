@@ -38,6 +38,9 @@
   /* Print */
   --print-ground: #fbf8f0;
   --print-ink: #1e2a5e;
+  --print-field: #1e2a5e;
+  --print-resist: #fbf8f0;
+  --remove-text: #a3262a;
 
   /* Stepped temperature bands (daytime high) */
   --band-1: #d9deee;
@@ -105,7 +108,10 @@
     --warn-ink: #f4eedf;
 
     --print-ground: #1c1f33;
-    --print-ink: #8e9bd6;
+    --print-ink: #7f8bc4;
+    --print-field: #2a3870;
+    --print-resist: #7f8bc4;
+    --remove-text: #e9a79a;
 
     --band-1: #2b3560;
     --band-1-ink: #f4eedf;

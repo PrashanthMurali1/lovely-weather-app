@@ -34,9 +34,9 @@ function PrintPatterns() {
           <circle className="print-ink" cx="12" cy="12" r="1.3" />
         </pattern>
         <pattern id="rain-print-4" width="12" height="12" patternUnits="userSpaceOnUse">
-          <rect className="print-ink" width="12" height="12" />
+          <rect className="print-field" width="12" height="12" />
           <Quatrefoil className="print-resist" />
-          <circle className="print-ink" cx="6" cy="6" r="0.9" />
+          <circle className="print-field" cx="6" cy="6" r="0.9" />
         </pattern>
       </defs>
     </svg>

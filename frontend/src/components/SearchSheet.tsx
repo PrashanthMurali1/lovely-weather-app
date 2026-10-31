@@ -4,6 +4,7 @@ import type { Place } from "../api/types";
 import { useSavedPlaces } from "../hooks/useSavedPlaces";
 import { useSearch } from "../hooks/useSearch";
 import Icon from "./Icon";
+import PrintBand from "./PrintBand";
 
 interface Props {
   open: boolean;
@@ -67,11 +68,11 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
         {label(p)}
       </button>
       {isSaved(p) ? (
-        <button type="button" className="search-toggle" aria-label={`Remove ${p.name}`} onClick={() => remove(p.id)}>
+        <button type="button" className="search-toggle search-remove" aria-label={`Remove ${p.name}`} onClick={() => remove(p.id)}>
           Remove
         </button>
       ) : (
-        <button type="button" className="search-toggle" aria-label={`Save ${p.name}`} onClick={() => save(p)}>
+        <button type="button" className="search-toggle search-save" aria-label={`Save ${p.name}`} onClick={() => save(p)}>
           Save
         </button>
       )}
@@ -90,7 +91,7 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
       ref={dialogRef}
       onKeyDown={onKeyDown}
     >
-      <div className="search-panel">
+      <div className="search-top">
         <div className="search-header">
           <h2 id="search-title">Choose a place</h2>
           <button type="button" className="search-close" onClick={onClose}>
@@ -98,6 +99,9 @@ export default function SearchSheet({ open, onClose, onSelect }: Props) {
             Close
           </button>
         </div>
+        <PrintBand />
+      </div>
+      <div className="search-panel">
         <label className="search-label" htmlFor="search-input">
           Search for a city
         </label>
