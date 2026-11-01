@@ -151,7 +151,7 @@ class WeatherService:
     async def get_cyclones(self) -> Cyclones:
         provider = self._maps()
         return await self._cached(
-            key="cyclones:nio",
+            key="cyclones:nio:active",  # renamed when ended storms were dropped, so old cached payloads are never served
             ttl=self.settings.cyclone_ttl_seconds,
             load=lambda p: Cyclones.model_validate(p).model_copy(update={"stale": False}),
             dump=lambda c: c.model_dump(mode="json", by_alias=True),

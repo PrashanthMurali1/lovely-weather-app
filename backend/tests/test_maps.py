@@ -13,6 +13,7 @@ from app.providers.maps import (
     in_north_indian_ocean,
     parse_cyclone,
     parse_radar,
+    select_active_nio,
 )
 
 NOW = datetime(2026, 11, 1, 10, 0, tzinfo=timezone.utc)
@@ -69,6 +70,28 @@ GEOMETRY = {
         feature("Polygon", square(84.8, 12.2, 3.0), "Poly_Green", "02/11 06:00"),
     ]
 }
+
+
+def listing_event(eid, lon, lat, current, fromdate="2026-11-01T00:00:00"):
+    return {
+        "geometry": {"type": "Point", "coordinates": [lon, lat]},
+        "properties": {"eventid": eid, "iscurrent": current, "fromdate": fromdate},
+    }
+
+
+def test_only_active_north_indian_ocean_storms_are_selected():
+    listing = {"features": [
+        listing_event(1, 84.8, 12.2, "true", "2026-11-01T00:00:00"),    # active, Bay of Bengal
+        listing_event(2, 81.8, 16.4, "false", "2026-10-26T00:00:00"),   # ended, Bay of Bengal
+        listing_event(3, 144.1, 22.3, "true"),                          # active, western Pacific
+        listing_event(4, 66.0, 18.0, True, "2026-11-01T06:00:00"),      # active, Arabian Sea (bool flag)
+    ]}
+    chosen = select_active_nio(listing)
+    assert [e["properties"]["eventid"] for e in chosen] == [4, 1]  # newest first
+
+
+def test_no_active_storms_is_an_empty_list():
+    assert select_active_nio({"features": [listing_event(2, 81.8, 16.4, "false")]}) == []
 
 
 def test_parse_radar_ok():

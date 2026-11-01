@@ -111,7 +111,7 @@ describe("MapView", () => {
   it("says plainly when there are no cyclones", () => {
     state.cyclones = query(cyclones([]));
     render(<MapView theme="dark" place={place} online />);
-    expect(screen.getByText(/No active or recent cyclones/)).toBeInTheDocument();
+    expect(screen.getByText(/No active cyclones/)).toBeInTheDocument();
   });
 
   it("offers retry when radar fails, and explains when offline", async () => {

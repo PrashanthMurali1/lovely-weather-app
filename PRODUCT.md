@@ -29,7 +29,7 @@ India-first and monsoon-aware: built around Indian cities, IST times and Indian 
 ## Capabilities and Constraints
 
 - Phase 1 screens: forecast (hero, stats row, 48-hour strip, 7-day list), search sheet, status banner (offline, stale, error with retry), footer attribution.
-- Radar & storms map (added 1 Nov 2026): interactive India map with a 2-hour radar loop (RainViewer frames, recoloured in-app) and North Indian Ocean cyclone tracks, cones and wind footprints (GDACS), always with their source and age. Radar coverage over India is partial: absence of echoes on the map is not a forecast of dry weather.
+- Radar & storms map (added 1 Nov 2026): interactive India map with a 2-hour radar loop (RainViewer frames, recoloured in-app) and active North Indian Ocean cyclone tracks, cones and wind footprints (GDACS), always with their source and age. Radar coverage over India is partial: absence of echoes on the map is not a forecast of dry weather.
 - Later phases (not designed now): multi-model comparison, IMD alerts, observations.
 - Must work offline and on small phones; no UI component library.
 - Free and non-commercial: no ads, subscriptions or purchases.

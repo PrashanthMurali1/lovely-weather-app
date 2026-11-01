@@ -20,7 +20,8 @@ CYCLONE_ATTRIBUTION = "Cyclone data by GDACS (UN OCHA / EC JRC)"
 # North Indian Ocean: Arabian Sea, Bay of Bengal and the Indian coasts.
 NIO_LON = (40.0, 100.0)
 NIO_LAT = (-5.0, 30.0)
-RECENT_DAYS = 14
+# GDACS lists events by date range; a storm that is active now started within this window.
+LOOKBACK_DAYS = 14
 MAX_CYCLONES = 6
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -72,6 +73,21 @@ def parse_radar(data: dict) -> RadarFrames:
 
 def in_north_indian_ocean(lon: float, lat: float) -> bool:
     return NIO_LON[0] <= lon <= NIO_LON[1] and NIO_LAT[0] <= lat <= NIO_LAT[1]
+
+
+def is_active(event: dict) -> bool:
+    return str(event["properties"].get("iscurrent")).lower() == "true"
+
+
+def select_active_nio(listing: dict) -> list[dict]:
+    """Storms that are active right now in the North Indian Ocean, newest first."""
+    events = [
+        e
+        for e in listing["features"]
+        if is_active(e) and in_north_indian_ocean(*e["geometry"]["coordinates"][:2])
+    ]
+    events.sort(key=lambda e: e["properties"].get("fromdate", ""), reverse=True)
+    return events[:MAX_CYCLONES]
 
 
 def parse_cyclone(event: dict, geometry: dict, now: datetime) -> Cyclone:
@@ -157,26 +173,15 @@ class MapsProvider:
         now = datetime.now(timezone.utc)
         params = {
             "eventlist": "TC",
-            "fromdate": (now - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d"),
+            "fromdate": (now - timedelta(days=LOOKBACK_DAYS)).strftime("%Y-%m-%d"),
             "todate": now.strftime("%Y-%m-%d"),
             "alertlevel": "Green;Orange;Red",
         }
         listing = await get_json(self._client, GDACS_EVENTS_URL, params, self._timeout)
         try:
-            events = [
-                e
-                for e in listing["features"]
-                if in_north_indian_ocean(*e["geometry"]["coordinates"][:2])
-            ]
+            events = select_active_nio(listing)
         except (KeyError, TypeError, ValueError) as e:
             raise UpstreamUnavailable("malformed cyclone list") from e
-        events.sort(
-            key=lambda e: (
-                str(e["properties"].get("iscurrent")).lower() != "true",
-                e["properties"].get("fromdate", ""),
-            )
-        )
-        events = events[:MAX_CYCLONES]
 
         async def one(event: dict) -> Cyclone | None:
             p = event["properties"]

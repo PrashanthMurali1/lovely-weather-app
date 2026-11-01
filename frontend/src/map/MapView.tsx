@@ -204,8 +204,8 @@ export default function MapView({ theme, place, online }: Props) {
 
       <div className="surface map-storms">
         <div className="section-head">
-          <h2>Cyclones</h2>
-          <p>North Indian Ocean · last 14 days</p>
+          <h2>Active cyclones</h2>
+          <p>North Indian Ocean · now</p>
         </div>
         {cyclones.isError && !cyclones.data ? (
           <p className="map-empty" role="alert">
@@ -219,7 +219,7 @@ export default function MapView({ theme, place, online }: Props) {
             Loading cyclones…
           </p>
         ) : storms.length === 0 ? (
-          <p className="map-empty">No active or recent cyclones over the Arabian Sea or the Bay of Bengal.</p>
+          <p className="map-empty">No active cyclones over the Arabian Sea or the Bay of Bengal.</p>
         ) : (
           <ul className="storm-list">
             {storms.map((c) => {
@@ -239,7 +239,7 @@ export default function MapView({ theme, place, online }: Props) {
                     <span className="storm-dot" style={{ background: classColor(c.track[currentIndex(c)]?.cls ?? null) }} aria-hidden="true" />
                     <span className="storm-name">{c.name}</span>
                     <span className="storm-meta">
-                      {cycloneStage(c)} · {c.active ? "Active" : "Ended"}
+                      {cycloneStage(c)}
                       {c.windKph !== null ? ` · max winds ${Math.round(c.windKph)} km/h` : ""}
                     </span>
                     <span className={`alert-chip alert-${c.alert.toLowerCase()}`}>{c.alert} alert</span>

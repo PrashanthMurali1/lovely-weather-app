@@ -115,7 +115,6 @@ function drawOne(
 ): CycloneHit {
   const idx = currentIndex(c);
   ctx.save();
-  ctx.globalAlpha = c.active ? 1 : 0.55;
   ctx.lineJoin = "round";
 
   // Uncertainty cone
@@ -204,7 +203,7 @@ function drawOne(
   return { id: c.id, x: cx, y: cy };
 }
 
-/** Draw ended storms first (dimmed), active ones on top. Returns screen positions for hit-testing. */
+/** Draw every storm; the strongest last so it sits on top. Returns screen positions for hit-testing. */
 export function drawCyclones(
   ctx: CanvasRenderingContext2D,
   cyclones: Cyclone[],
@@ -214,7 +213,7 @@ export function drawCyclones(
   selectedId: string | null,
   angle: number,
 ): CycloneHit[] {
-  const ordered = [...cyclones].sort((a, b) => Number(a.active) - Number(b.active));
+  const ordered = [...cyclones].sort((a, b) => (a.windKph ?? 0) - (b.windKph ?? 0));
   return ordered.map((c) => drawOne(ctx, c, view, size, p, c.id === selectedId, angle));
 }
 
