@@ -8,7 +8,8 @@ Forecasts and place search come from [Open-Meteo](https://open-meteo.com/) (free
 
 ## Architecture
 
-- `backend/`: FastAPI app (`/api/forecast`, `/api/search`, `/api/health`), provider interface with an Open-Meteo adapter, SQLite cache with request coalescing, stale fallback and daily budget.
+- `frontend/src/map/`: the radar and cyclone map, built in-app: a canvas engine (own Mercator projection, pan/zoom, basemap drawn from bundled Natural Earth geometry, radar tiles recoloured with the app ramp, cyclone cone and track graphics). `node scripts/build-geo.mjs` regenerates the geometry.
+- `backend/`: FastAPI app (`/api/forecast`, `/api/search`, `/api/radar`, `/api/cyclones`, `/api/health`), provider interface with an Open-Meteo adapter and a map-data adapter (RainViewer radar frames, GDACS cyclone tracks), SQLite cache with request coalescing, stale fallback and daily budget.
 - `frontend/`: React + TanStack Query SPA, built with Vite and `vite-plugin-pwa` (Workbox service worker). Saved/recent places live in `localStorage`.
 - In dev, Vite proxies `/api` to `localhost:$BACKEND_PORT` (default 8000).
 

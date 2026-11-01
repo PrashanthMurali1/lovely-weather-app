@@ -3,7 +3,8 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from pydantic import ValidationError
 
-from app.errors import UpstreamRateLimited, UpstreamUnavailable
+from app.errors import UpstreamUnavailable
+from app.providers.http import get_json
 from app.models import Current, DailyPoint, Forecast, HourlyPoint, Location, Place
 
 GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
@@ -38,30 +39,7 @@ class OpenMeteoProvider:
         self._timeout = timeout
 
     async def _get_json(self, url: str, params: dict) -> dict:
-        resp = None
-        for attempt in range(2):
-            try:
-                resp = await self._client.get(url, params=params, timeout=self._timeout)
-                break
-            except httpx.TransportError as e:  # includes timeouts
-                if attempt == 1:
-                    raise UpstreamUnavailable(f"network error: {e!r}") from e
-        assert resp is not None
-        if resp.status_code == 429:
-            try:
-                retry_after = int(resp.headers.get("Retry-After", 60))
-            except ValueError:
-                retry_after = 60
-            raise UpstreamRateLimited(retry_after=retry_after)
-        if resp.status_code >= 400:
-            raise UpstreamUnavailable(f"upstream status {resp.status_code}")
-        try:
-            data = resp.json()
-        except ValueError as e:
-            raise UpstreamUnavailable("invalid JSON from upstream") from e
-        if not isinstance(data, dict):
-            raise UpstreamUnavailable("unexpected JSON shape from upstream")
-        return data
+        return await get_json(self._client, url, params, self._timeout)
 
     async def search(self, q: str, limit: int = 8) -> list[Place]:
         data = await self._get_json(

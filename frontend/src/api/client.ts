@@ -1,4 +1,4 @@
-import type { Forecast, Place } from "./types";
+import type { Cyclones, Forecast, Place, RadarFrames } from "./types";
 
 const BASE: string = import.meta.env.VITE_API_BASE ?? "";
 
@@ -38,4 +38,12 @@ export async function searchPlaces(q: string): Promise<Place[]> {
 
 export function getForecast(lat: number, lon: number): Promise<Forecast> {
   return request<Forecast>(`/api/forecast?lat=${lat}&lon=${lon}`);
+}
+
+export function getRadar(): Promise<RadarFrames> {
+  return request<RadarFrames>("/api/radar");
+}
+
+export function getCyclones(): Promise<Cyclones> {
+  return request<Cyclones>("/api/cyclones");
 }

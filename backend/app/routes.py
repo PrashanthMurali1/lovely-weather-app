@@ -8,6 +8,8 @@ router = APIRouter(prefix="/api")
 
 FORECAST_CACHE_CONTROL = "public, max-age=300, stale-while-revalidate=600"
 SEARCH_CACHE_CONTROL = "public, max-age=86400"
+RADAR_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
+CYCLONE_CACHE_CONTROL = "public, max-age=300, stale-while-revalidate=900"
 MAX_QUERY_LENGTH = 100
 
 
@@ -40,6 +42,20 @@ async def forecast(
         raise _invalid("models", "must be exactly one supported model")
     result = await request.app.state.service.get_forecast(lat, lon, items[0])
     response.headers["Cache-Control"] = FORECAST_CACHE_CONTROL
+    return result.model_dump(by_alias=True)
+
+
+@router.get("/radar")
+async def radar(request: Request, response: Response):
+    result = await request.app.state.service.get_radar()
+    response.headers["Cache-Control"] = RADAR_CACHE_CONTROL
+    return result.model_dump(by_alias=True)
+
+
+@router.get("/cyclones")
+async def cyclones(request: Request, response: Response):
+    result = await request.app.state.service.get_cyclones()
+    response.headers["Cache-Control"] = CYCLONE_CACHE_CONTROL
     return result.model_dump(by_alias=True)
 
 

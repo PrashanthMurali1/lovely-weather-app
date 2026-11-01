@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-export type IconName = "search" | "locate" | "close" | "offline" | "clock" | "alert" | "drop" | "sun" | "moon";
+export type IconName = "search" | "locate" | "close" | "offline" | "clock" | "alert" | "drop" | "sun" | "moon" | "plus" | "minus" | "expand" | "play" | "pause" | "map" | "forecast";
 
 const PATHS: Record<IconName, ReactElement> = {
   search: (
@@ -44,6 +44,22 @@ const PATHS: Record<IconName, ReactElement> = {
     </>
   ),
   moon: <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
+  expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
+  play: <path d="M8 5.5v13l11-6.5z" className="icon-fill" />,
+  pause: <path d="M8 5.5v13M16 5.5v13" strokeWidth="3" />,
+  map: (
+    <>
+      <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6z" />
+      <path d="M9 4v14M15 6v14" />
+    </>
+  ),
+  forecast: (
+    <>
+      <path d="M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 8.5a4.75 4.75 0 0 1 0 9.5z" />
+    </>
+  ),
   drop: <path d="M12 3.5c3.4 4.3 5.8 7.6 5.8 10.6a5.8 5.8 0 0 1-11.6 0c0-3 2.4-6.3 5.8-10.6z" />,
 };
 
