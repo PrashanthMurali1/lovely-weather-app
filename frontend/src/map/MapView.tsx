@@ -5,6 +5,7 @@ import { useCyclones } from "../hooks/useCyclones";
 import { useRadar } from "../hooks/useRadar";
 import type { Theme } from "../hooks/useTheme";
 import { CLASS_COLOR, CLASS_LABEL, classColor, currentIndex } from "./cycloneLayer";
+import { cyclonesUsable, offlineCyclonesLabel, offlineRadarLabel, usableFrames } from "./frames";
 import MapCanvas, { type MapHandle } from "./MapCanvas";
 import { BANDS, RAMP, bandRateText } from "./radarScale";
 import { formatAge, formatEpochClock, formatTrackTime } from "./time";
@@ -33,11 +34,17 @@ export default function MapView({ theme, place, online }: Props) {
   const [frameIndex, setFrameIndex] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState<boolean[]>([]);
+  const [prefetchAll, setPrefetchAll] = useState(false);
 
-  const frames = radar.data?.frames ?? [];
+  // Radar older than 3 hours is never shown, however it got here (network or offline cache).
+  const frames = useMemo(() => usableFrames(radar.data?.frames ?? [], Date.now()), [radar.data]);
+  const radarForMap = useMemo(() => (radar.data ? { ...radar.data, frames } : null), [radar.data, frames]);
+  const radarFailed = radar.isError && !radar.data;
+  const radarOutOfDate = !!radar.data && frames.length === 0;
   const latest = Math.max(0, frames.length - 1);
   const index = Math.min(frameIndex ?? latest, latest);
-  const storms = cyclones.data?.cyclones ?? [];
+  const cyclonesFresh = cyclones.data ? cyclonesUsable(cyclones.data.fetchedAt, Date.now()) : true;
+  const storms = cyclones.data && cyclonesFresh ? cyclones.data.cyclones : [];
   const readyCount = ready.filter(Boolean).length;
 
   // New frames arrive every few minutes: follow the latest unless the viewer moved the slider.
@@ -62,11 +69,13 @@ export default function MapView({ theme, place, online }: Props) {
   const frameTime = frames[index]?.time;
   const radarStatus = useMemo(() => {
     if (!showRadar) return "Radar hidden";
-    if (radar.isError && !radar.data) return "Radar unavailable";
+    if (radarFailed || radarOutOfDate) return "Radar unavailable";
     if (!frames.length) return "Loading radar…";
-    const loading = readyCount < frames.length ? ` · loading frames ${readyCount}/${frames.length}` : "";
+    if (!online) return offlineRadarLabel(frames[index].time, Date.now());
+    // Older frames load only once the viewer plays or scrubs, so only then is anything "loading".
+    const loading = prefetchAll && readyCount < frames.length ? ` · loading frames ${readyCount}/${frames.length}` : "";
     return `${formatEpochClock(frames[index].time)} IST · ${formatAge(frames[index].time)}${loading}`;
-  }, [showRadar, radar.isError, radar.data, frames, index, readyCount]);
+  }, [showRadar, radarFailed, radarOutOfDate, online, frames, index, readyCount, prefetchAll]);
 
   const mapLabel =
     "Interactive map of India and the surrounding seas. Drag to pan, scroll or pinch to zoom, arrow keys to move, plus and minus to zoom, 0 to reset.";
@@ -96,9 +105,10 @@ export default function MapView({ theme, place, online }: Props) {
             ref={mapRef}
             theme={theme}
             place={place}
-            radar={radar.data ?? null}
+            radar={radarForMap}
             frameIndex={index}
             showRadar={showRadar}
+            prefetchAll={prefetchAll}
             cyclones={storms}
             showCyclones={showCyclones}
             selectedCycloneId={selectedId}
@@ -146,9 +156,9 @@ export default function MapView({ theme, place, online }: Props) {
             </div>
           ) : null}
 
-          {radar.isError && !radar.data ? (
+          {radarFailed || radarOutOfDate ? (
             <div className="map-note" role="alert">
-              <p>{online ? "Couldn't load radar." : "Radar needs a connection."}</p>
+              <p>{!online ? "Radar needs a connection." : radarOutOfDate ? "Radar is out of date." : "Couldn't load radar."}</p>
               {online ? (
                 <button type="button" className="btn btn-quiet" onClick={() => void radar.refetch()}>
                   Retry
@@ -164,7 +174,10 @@ export default function MapView({ theme, place, online }: Props) {
             className="map-btn"
             aria-label={playing ? "Pause radar loop" : "Play radar loop"}
             disabled={frames.length < 2 || !showRadar}
-            onClick={() => setPlaying((p) => !p)}
+            onClick={() => {
+              setPrefetchAll(true);
+              setPlaying((p) => !p);
+            }}
           >
             <Icon name={playing ? "pause" : "play"} />
           </button>
@@ -179,6 +192,7 @@ export default function MapView({ theme, place, online }: Props) {
               aria-label="Radar time"
               aria-valuetext={frameTime ? `${formatEpochClock(frameTime)} IST` : undefined}
               onChange={(e) => {
+                setPrefetchAll(true);
                 setPlaying(false);
                 setFrameIndex(Number(e.target.value));
               }}
@@ -205,7 +219,7 @@ export default function MapView({ theme, place, online }: Props) {
       <div className="surface map-storms">
         <div className="section-head">
           <h2>Active cyclones</h2>
-          <p>North Indian Ocean · now</p>
+          <p>{!online && cyclones.data && cyclonesFresh ? offlineCyclonesLabel(cyclones.data.fetchedAt, Date.now()) : "North Indian Ocean · now"}</p>
         </div>
         {cyclones.isError && !cyclones.data ? (
           <p className="map-empty" role="alert">
@@ -217,6 +231,15 @@ export default function MapView({ theme, place, online }: Props) {
         ) : !cyclones.data ? (
           <p className="map-empty" role="status">
             Loading cyclones…
+          </p>
+        ) : !cyclonesFresh ? (
+          <p className="map-empty" role="status">
+            {online ? "Cyclone data is out of date. " : "Cyclone data needs a connection."}
+            {online ? (
+              <button type="button" className="link-btn" onClick={() => void cyclones.refetch()}>
+                Retry
+              </button>
+            ) : null}
           </p>
         ) : storms.length === 0 ? (
           <p className="map-empty">No active cyclones over the Arabian Sea or the Bay of Bengal.</p>

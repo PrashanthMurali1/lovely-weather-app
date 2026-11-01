@@ -11,6 +11,9 @@ const MIN_GAP_MS = 700;
 const MAX_PARALLEL = 4;
 const CACHE_LIMIT = 240;
 
+/** The service worker's tile cache (vite.config.ts). Tiles it holds need no network, so no pacing. */
+export const RADAR_TILE_CACHE = "radar-tiles";
+
 export type RadarTile = HTMLCanvasElement | null;
 
 interface Job {
@@ -42,6 +45,15 @@ export function cachedTile(url: string): RadarTile | undefined {
     cache.set(url, hit);
   }
   return hit;
+}
+
+export async function isCachedLocally(url: string): Promise<boolean> {
+  try {
+    if (typeof caches === "undefined") return false;
+    return !!(await caches.match(url, { cacheName: RADAR_TILE_CACHE }));
+  } catch {
+    return false;
+  }
 }
 
 async function fetchAndRecolour(url: string): Promise<RadarTile> {
@@ -103,15 +115,21 @@ export function loadTile(url: string, priority = 0): Promise<RadarTile> {
     if (queued && priority < queued.priority) queued.priority = priority;
     return pending;
   }
-  const p = new Promise<RadarTile>((resolve) => {
-    queue.push({ url, priority, resolve });
-  }).then((tile) => {
-    inflight.delete(url);
-    remember(url, tile);
-    return tile;
-  });
+  const p = isCachedLocally(url)
+    .then((local) =>
+      local
+        ? fetchAndRecolour(url) // already on this device: no network, so no need to wait our turn
+        : new Promise<RadarTile>((resolve) => {
+            queue.push({ url, priority, resolve });
+            pump();
+          }),
+    )
+    .then((tile) => {
+      inflight.delete(url);
+      remember(url, tile);
+      return tile;
+    });
   inflight.set(url, p);
-  pump();
   return p;
 }
 

@@ -8,7 +8,7 @@ Forecasts and place search come from [Open-Meteo](https://open-meteo.com/) (free
 
 ## Architecture
 
-- `frontend/src/map/`: the radar and cyclone map, built in-app: a canvas engine (own Mercator projection, pan/zoom, basemap drawn from bundled Natural Earth geometry, radar tiles recoloured with the app ramp, cyclone cone and track graphics). `node scripts/build-geo.mjs` regenerates the geometry.
+- `frontend/src/map/`: the radar and cyclone map, built in-app: a canvas engine (own Mercator projection, pan/zoom, basemap drawn from bundled Natural Earth geometry, radar tiles recoloured with the app ramp, cyclone cone and track graphics). `node scripts/build-geo.mjs` regenerates the geometry. Offline: the service worker caches radar tiles, the frame list and storms for 3 hours (production builds only), and nothing older is shown.
 - `backend/`: FastAPI app (`/api/forecast`, `/api/search`, `/api/radar`, `/api/cyclones`, `/api/health`), provider interface with an Open-Meteo adapter and a map-data adapter (RainViewer radar frames, GDACS cyclone tracks), SQLite cache with request coalescing, stale fallback and daily budget.
 - `frontend/`: React + TanStack Query SPA, built with Vite and `vite-plugin-pwa` (Workbox service worker). Saved/recent places live in `localStorage`.
 - In dev, Vite proxies `/api` to `localhost:$BACKEND_PORT` (default 8000).
@@ -65,6 +65,10 @@ All optional, prefix `WEATHER_`; see `backend/.env.example`.
 
 - Serve the built SPA (`npm run build`, output `frontend/dist`) and `/api` from one origin, so the frontend's relative `/api` calls need no CORS or build-time URL.
 - HTTPS is required for the service worker and PWA install (localhost is exempt).
+- That includes `/api/radar` and `/api/cyclones`: the service worker matches them by path, so they must also be served from the site's own origin. If the backend ever moves to another domain, those matchers (`frontend/src/sw/radarCaching.ts`) need a configurable API origin.
+- Radar tiles are fetched by the browser straight from `tilecache.rainviewer.com`; they do not pass through your backend, and the service worker caches them on each visitor's device (3 hours).
+- Nothing in the built app refers to localhost or a port. The `localhost` backend target in `frontend/vite.config.ts` (`BACKEND_PORT`, default 8001) is only for `npm run dev` and `vite preview`.
+- To try the production build locally, including offline behaviour: `npm run build`, then `BACKEND_PORT=<backend port> npx vite preview --port 4280` inside `frontend/`.
 - No API key is needed.
 - Release phase (hosting, Play Store TWA) is a separate later spec.
 

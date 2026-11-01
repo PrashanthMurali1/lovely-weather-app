@@ -3,6 +3,7 @@ import type { Cyclone, RadarFrames } from "../api/types";
 import type { Theme } from "../hooks/useTheme";
 import { drawBasemap, drawCities, drawPlaceMarker, drawScaleBar } from "./basemap";
 import { drawCyclones, hitCyclone, type CycloneHit } from "./cycloneLayer";
+import { warmIndices } from "./frames";
 import { loadGeo, type Geo } from "./geo";
 import { PALETTES } from "./palette";
 import {
@@ -17,6 +18,7 @@ import {
   type View,
 } from "./projection";
 import { TILE_PX, cachedTile, cancelQueued, loadTile, tileUrl, tileZFor } from "./radarTiles";
+import { INDIA_VIEW, PLACE_ZOOM, startView } from "./startView";
 
 export interface MapHandle {
   zoomIn: () => void;
@@ -32,6 +34,8 @@ interface Props {
   radar: RadarFrames | null;
   frameIndex: number;
   showRadar: boolean;
+  /** Load every frame, not just the newest few: set once the viewer plays or scrubs the loop. */
+  prefetchAll: boolean;
   cyclones: Cyclone[];
   showCyclones: boolean;
   selectedCycloneId: string | null;
@@ -41,10 +45,7 @@ interface Props {
   label: string;
 }
 
-// Frames all of India as officially mapped: Ladakh and J&K reach about 37°N, Arunachal about 97°E.
-const INDIA_VIEW = { west: 62, south: 4, east: 100, north: 38 };
 const RADAR_OPACITY = 0.92;
-const PLACE_ZOOM = 6.2;
 
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
@@ -164,9 +165,10 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
 
   // ---- radar loading -------------------------------------------------------------------------
   const requestTiles = useCallback(
-    (allFrames: boolean) => {
-      const { radar, frameIndex, showRadar } = propsRef.current;
+    (settled: boolean) => {
+      const { radar, frameIndex, showRadar, prefetchAll } = propsRef.current;
       if (!showRadar || !radar) return;
+      const warm = new Set(warmIndices(radar.frames.length));
       const tiles = tilesForView();
       const keep = new Set<string>();
       const wanted: { url: string; priority: number }[] = [];
@@ -175,7 +177,7 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
         for (const t of tiles) {
           const url = tileUrl(radar.host, f.path, t);
           keep.add(url);
-          if (i === frameIndex || allFrames) wanted.push({ url, priority });
+          if (i === frameIndex || (settled && (prefetchAll || warm.has(i)))) wanted.push({ url, priority });
         }
       });
       cancelQueued((url) => keep.has(url));
@@ -273,7 +275,7 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
       canvas.height = Math.round(h * dpr);
       if (first) {
         first = false;
-        viewRef.current = fitBounds(INDIA_VIEW, { w, h }, 12);
+        viewRef.current = startView(propsRef.current.place, { w, h });
       }
       viewChanged();
     };
@@ -412,14 +414,25 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
   }, [fitRegion, flyTo, invalidate, setView, viewChanged]);
 
   // Redraw when anything the picture depends on changes; fetch tiles when the frame list or layer changes.
-  const { theme, frameIndex, showRadar, showCyclones, cyclones, selectedCycloneId, radar, place } = props;
+  const { theme, frameIndex, showRadar, showCyclones, cyclones, selectedCycloneId, radar, place, prefetchAll } = props;
   useEffect(() => {
     invalidate();
   }, [theme, frameIndex, showRadar, showCyclones, cyclones, selectedCycloneId, place, invalidate]);
+  // Follow the viewer to a different city; the first place is already the opening view.
+  const shownPlace = useRef(place ? `${place.lat},${place.lon}` : "");
+  useEffect(() => {
+    const key = place ? `${place.lat},${place.lon}` : "";
+    if (key === shownPlace.current) return;
+    shownPlace.current = key;
+    if (place) flyTo({ lon: place.lon, lat: place.lat, zoom: PLACE_ZOOM });
+  }, [place, flyTo]);
   useEffect(() => {
     lastReady.current = "";
     viewChanged();
   }, [radar, frameIndex, showRadar, viewChanged]);
+  useEffect(() => {
+    if (prefetchAll) requestTiles(true);
+  }, [prefetchAll, requestTiles]);
 
   return (
     <div ref={wrapRef} className="map-canvas-wrap">

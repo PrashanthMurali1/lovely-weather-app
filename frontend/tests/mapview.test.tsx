@@ -11,10 +11,17 @@ vi.mock("../src/hooks/useCyclones", () => ({ useCyclones: () => state.cyclones }
 vi.mock("../src/map/MapCanvas", async () => {
   const React = await import("react");
   return {
-    default: React.forwardRef((props: { frameIndex: number; showRadar: boolean; showCyclones: boolean }, ref) => {
+    default: React.forwardRef((props: { frameIndex: number; showRadar: boolean; showCyclones: boolean; prefetchAll: boolean; radar: { frames: unknown[] } | null }, ref) => {
       React.useImperativeHandle(ref, () => ({ zoomIn() {}, zoomOut() {}, fitRegion() {}, flyToPlace() {}, flyToCyclone() {} }));
       return (
-        <div data-testid="canvas" data-frame={props.frameIndex} data-radar={props.showRadar} data-cyclones={props.showCyclones} />
+        <div
+          data-testid="canvas"
+          data-frame={props.frameIndex}
+          data-radar={props.showRadar}
+          data-cyclones={props.showCyclones}
+          data-prefetch={props.prefetchAll}
+          data-frames={props.radar?.frames.length ?? 0}
+        />
       );
     }),
   };
@@ -22,13 +29,15 @@ vi.mock("../src/map/MapCanvas", async () => {
 
 import MapView from "../src/map/MapView";
 
-const radarData: RadarFrames = {
+const nowSec = () => Math.floor(Date.now() / 1000);
+const framesEnding = (minutesAgo: number): RadarFrames => ({
   host: "https://tilecache.rainviewer.com",
-  generatedAt: 1793527533,
+  generatedAt: nowSec() - minutesAgo * 60,
   stale: false,
   attribution: "Radar by RainViewer",
-  frames: [0, 1, 2].map((i) => ({ time: 1793520000 + i * 600, path: `/v2/radar/f${i}` })),
-};
+  frames: [0, 1, 2].map((i) => ({ time: nowSec() - minutesAgo * 60 - (2 - i) * 600, path: `/v2/radar/f${i}` })),
+});
+const radarData: RadarFrames = framesEnding(10);
 
 const storm: Cyclone = {
   id: "9",
@@ -56,7 +65,7 @@ const query = (data: unknown, over: Record<string, unknown> = {}) => ({
 });
 
 const cyclones = (list: Cyclone[]): Cyclones => ({
-  fetchedAt: "2026-11-01T15:30:00+05:30",
+  fetchedAt: new Date(Date.now() - 5 * 60_000).toISOString(),
   stale: false,
   cyclones: list,
   attribution: "Cyclone data by GDACS (UN OCHA / EC JRC)",
@@ -134,5 +143,81 @@ describe("MapView", () => {
     expect(text).toContain("RainViewer");
     expect(text).toContain("GDACS");
     expect(text).toContain("Natural Earth");
+  });
+
+  describe("offline and stale radar", () => {
+    it("labels cached radar with its time and age when offline", () => {
+      state.radar = query(framesEnding(80));
+      render(<MapView theme="dark" place={place} online={false} />);
+      expect(screen.getByText(/Offline\. Radar from \d{1,2}:\d{2} (am|pm) IST \(1 h 20 min ago\)/)).toBeInTheDocument();
+    });
+
+    it("hands the map only frames that are recent enough", () => {
+      const mixed = framesEnding(10);
+      mixed.frames = [{ time: nowSec() - 5 * 3600, path: "/v2/radar/ancient" }, ...mixed.frames];
+      state.radar = query(mixed);
+      render(<MapView theme="dark" place={place} online />);
+      expect(screen.getByTestId("canvas")).toHaveAttribute("data-frames", "3");
+    });
+
+    it("says radar needs a connection when offline and every cached frame is too old", () => {
+      state.radar = query(framesEnding(5 * 60));
+      render(<MapView theme="dark" place={place} online={false} />);
+      expect(screen.getByRole("alert")).toHaveTextContent("Radar needs a connection.");
+      expect(screen.getByRole("slider", { name: "Radar time" })).toBeDisabled();
+    });
+
+    it("says radar is out of date, with Retry, when online but every frame is too old", async () => {
+      const refetch = vi.fn();
+      state.radar = query(framesEnding(5 * 60), { refetch });
+      render(<MapView theme="dark" place={place} online />);
+      expect(screen.getByRole("alert")).toHaveTextContent("Radar is out of date.");
+      await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+      expect(refetch).toHaveBeenCalled();
+    });
+  });
+
+  describe("offline and stale cyclones", () => {
+    it("labels storm positions with their age when offline", () => {
+      state.cyclones = query({ ...cyclones([storm]), fetchedAt: new Date(Date.now() - 45 * 60_000).toISOString() });
+      render(<MapView theme="dark" place={place} online={false} />);
+      expect(screen.getByText(/Offline\. Storm positions from \d{1,2}:\d{2} (am|pm) IST \(45 min ago\)/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /FOUR-26/ })).toBeInTheDocument();
+    });
+
+    it("hides storms older than 3 hours and says why when offline", () => {
+      state.cyclones = query({ ...cyclones([storm]), fetchedAt: new Date(Date.now() - 5 * 3600_000).toISOString() });
+      render(<MapView theme="dark" place={place} online={false} />);
+      expect(screen.queryByRole("button", { name: /FOUR-26/ })).not.toBeInTheDocument();
+      expect(screen.getByText("Cyclone data needs a connection.")).toBeInTheDocument();
+    });
+
+    it("hides storms older than 3 hours and says they are out of date when online", () => {
+      state.cyclones = query({ ...cyclones([storm]), fetchedAt: new Date(Date.now() - 5 * 3600_000).toISOString() });
+      render(<MapView theme="dark" place={place} online />);
+      expect(screen.queryByRole("button", { name: /FOUR-26/ })).not.toBeInTheDocument();
+      expect(screen.getByText(/Cyclone data is out of date/)).toBeInTheDocument();
+    });
+  });
+
+  describe("on-demand prefetch", () => {
+    it("does not claim frames are loading until the viewer asks for the full loop", async () => {
+      render(<MapView theme="dark" place={place} online />);
+      expect(screen.getByText(/IST/)).not.toHaveTextContent(/loading frames/);
+      await userEvent.click(screen.getByRole("button", { name: "Play radar loop" }));
+      expect(screen.getByText(/IST/)).toHaveTextContent(/loading frames 0\/3/);
+    });
+
+    it("starts with only the warm frames and widens when the viewer plays or scrubs", async () => {
+      const { unmount } = render(<MapView theme="dark" place={place} online />);
+      expect(screen.getByTestId("canvas")).toHaveAttribute("data-prefetch", "false");
+      await userEvent.click(screen.getByRole("button", { name: "Play radar loop" }));
+      expect(screen.getByTestId("canvas")).toHaveAttribute("data-prefetch", "true");
+      unmount();
+
+      render(<MapView theme="dark" place={place} online />);
+      fireEvent.change(screen.getByRole("slider", { name: "Radar time" }), { target: { value: "0" } });
+      expect(screen.getByTestId("canvas")).toHaveAttribute("data-prefetch", "true");
+    });
   });
 });

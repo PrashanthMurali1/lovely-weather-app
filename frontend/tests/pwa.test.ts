@@ -50,4 +50,18 @@ describe("pwa build output", () => {
     expect(sw).toMatch(/NetworkFirst/);
     expect(sw).toMatch(/StaleWhileRevalidate/);
   });
+
+  it("caches radar tiles for good, and the radar and cyclone lists network-first, for 3 hours", () => {
+    const raw = readFileSync(resolve(out, "sw.js"), "utf8");
+    const sw = raw.replace(/[\s"']+/g, "");
+    expect(raw).toContain("tilecache.rainviewer.com");
+    expect(raw).toContain("/api/radar");
+    expect(raw).toContain("/api/cyclones");
+    expect(sw).toContain("cacheName:radar-tiles");
+    expect(sw).toContain("cacheName:radar-frames");
+    expect(sw).toContain("cacheName:cyclones");
+    expect(sw).toMatch(/CacheFirst/);
+    expect(sw).toContain("maxAgeSeconds:10800");
+    expect(sw).toContain("maxEntries:600");
+  });
 });
