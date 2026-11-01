@@ -28,46 +28,41 @@ export function dbzFromRgb(r: number, g: number, b: number): number {
   return best.dbz;
 }
 
-// ---- our own ramp: reflectivity -> colour --------------------------------------------------------
+// ---- our own palette: reflectivity -> flat colour steps -----------------------------------------
 
 export type Rgba = [number, number, number, number];
 
-interface Stop {
+export interface Step {
+  /** The step starts at this reflectivity. */
   dbz: number;
-  rgba: Rgba;
+  rgb: [number, number, number];
 }
 
-/** Light sky blue, through green and amber, to red and violet. Alpha grows with intensity. */
-export const RAMP: readonly Stop[] = [
-  { dbz: 10, rgba: [125, 211, 252, 0.4] },
-  { dbz: 18, rgba: [56, 189, 248, 0.62] },
-  { dbz: 25, rgba: [37, 140, 240, 0.74] },
-  { dbz: 30, rgba: [45, 212, 150, 0.8] },
-  { dbz: 36, rgba: [250, 204, 21, 0.86] },
-  { dbz: 42, rgba: [249, 115, 22, 0.9] },
-  { dbz: 48, rgba: [239, 68, 68, 0.93] },
-  { dbz: 55, rgba: [217, 70, 239, 0.95] },
-  { dbz: 65, rgba: [250, 232, 255, 0.97] },
+/** How solid the rain is drawn. */
+export const RADAR_ALPHA = 0.92;
+
+/**
+ * Flat, high-contrast steps: greens for light rain, yellow, orange and red as it gets heavier,
+ * then magenta and violet for the most intense cores. Step edges line up with the legend bands
+ * (10, 25, 36 and 48 dBZ).
+ */
+export const STEPS: readonly Step[] = [
+  { dbz: 10, rgb: [143, 210, 122] },
+  { dbz: 18, rgb: [63, 181, 108] },
+  { dbz: 25, rgb: [27, 146, 82] },
+  { dbz: 31, rgb: [244, 208, 63] },
+  { dbz: 36, rgb: [245, 154, 35] },
+  { dbz: 42, rgb: [230, 59, 46] },
+  { dbz: 48, rgb: [190, 36, 140] },
+  { dbz: 56, rgb: [110, 40, 170] },
 ];
 
-export function rampRgba(dbz: number): Rgba | null {
+/** The step colour for a reflectivity, or null below the display threshold. */
+export function stepRgba(dbz: number): Rgba | null {
   if (dbz < MIN_DBZ) return null;
-  const last = RAMP[RAMP.length - 1];
-  if (dbz >= last.dbz) return last.rgba;
-  for (let i = 1; i < RAMP.length; i++) {
-    const a = RAMP[i - 1];
-    const b = RAMP[i];
-    if (dbz <= b.dbz) {
-      const t = (dbz - a.dbz) / (b.dbz - a.dbz);
-      return [
-        a.rgba[0] + (b.rgba[0] - a.rgba[0]) * t,
-        a.rgba[1] + (b.rgba[1] - a.rgba[1]) * t,
-        a.rgba[2] + (b.rgba[2] - a.rgba[2]) * t,
-        a.rgba[3] + (b.rgba[3] - a.rgba[3]) * t,
-      ];
-    }
-  }
-  return last.rgba;
+  let step = STEPS[0];
+  for (const s of STEPS) if (dbz >= s.dbz) step = s;
+  return [step.rgb[0], step.rgb[1], step.rgb[2], RADAR_ALPHA];
 }
 
 /** Rain rate from reflectivity with the Marshall-Palmer relation Z = 200 R^1.6. An estimate, not a gauge. */
@@ -99,18 +94,9 @@ export function bandRateText(b: RadarBand): string {
   return b.toDbz === null ? `>${lo} mm/h` : `${lo}–${fmt(rainRateMmH(b.toDbz))} mm/h`;
 }
 
-/** Recolour a decoded RGBA tile in place with the app ramp. Transparent pixels stay transparent. */
-export function recolour(data: Uint8ClampedArray): void {
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] === 0) continue;
-    const c = rampRgba(dbzFromRgb(data[i], data[i + 1], data[i + 2]));
-    if (!c) {
-      data[i + 3] = 0;
-    } else {
-      data[i] = c[0];
-      data[i + 1] = c[1];
-      data[i + 2] = c[2];
-      data[i + 3] = Math.round(c[3] * 255);
-    }
-  }
+/** A CSS gradient with hard stops, one equal segment per step, for the legend bar. */
+export function stepsGradientCss(): string {
+  const n = STEPS.length;
+  const parts = STEPS.map((s, i) => `rgb(${s.rgb.join(",")}) ${((i / n) * 100).toFixed(2)}% ${(((i + 1) / n) * 100).toFixed(2)}%`);
+  return `linear-gradient(90deg, ${parts.join(", ")})`;
 }

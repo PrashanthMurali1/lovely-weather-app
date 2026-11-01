@@ -7,7 +7,7 @@ import type { Theme } from "../hooks/useTheme";
 import { CLASS_COLOR, CLASS_LABEL, classColor, currentIndex } from "./cycloneLayer";
 import { cyclonesUsable, offlineCyclonesLabel, offlineRadarLabel, usableFrames } from "./frames";
 import MapCanvas, { type MapHandle } from "./MapCanvas";
-import { BANDS, RAMP, bandRateText } from "./radarScale";
+import { BANDS, bandRateText, stepsGradientCss } from "./radarScale";
 import { formatAge, formatEpochClock, formatTrackTime } from "./time";
 
 interface Props {
@@ -35,6 +35,7 @@ export default function MapView({ theme, place, online }: Props) {
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState<boolean[]>([]);
   const [prefetchAll, setPrefetchAll] = useState(false);
+  const [zoomLimits, setZoomLimits] = useState({ atMin: false, atMax: false });
 
   // Radar older than 3 hours is never shown, however it got here (network or offline cache).
   const frames = useMemo(() => usableFrames(radar.data?.frames ?? [], Date.now()), [radar.data]);
@@ -114,14 +115,15 @@ export default function MapView({ theme, place, online }: Props) {
             selectedCycloneId={selectedId}
             onSelectCyclone={setSelectedId}
             onFramesReady={setReady}
+            onZoomLimits={setZoomLimits}
             label={mapLabel}
           />
 
           <div className="map-controls" role="group" aria-label="Map controls">
-            <button type="button" className="map-btn" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
+            <button type="button" className="map-btn" aria-label="Zoom in" disabled={zoomLimits.atMax} onClick={() => mapRef.current?.zoomIn()}>
               <Icon name="plus" />
             </button>
-            <button type="button" className="map-btn" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>
+            <button type="button" className="map-btn" aria-label="Zoom out" disabled={zoomLimits.atMin} onClick={() => mapRef.current?.zoomOut()}>
               <Icon name="minus" />
             </button>
             <button type="button" className="map-btn" aria-label="Show all of India" onClick={() => mapRef.current?.fitRegion()}>
@@ -136,15 +138,7 @@ export default function MapView({ theme, place, online }: Props) {
 
           {showRadar ? (
             <div className="map-legend" role="group" aria-label="Radar intensity legend">
-              <div
-                className="legend-bar"
-                aria-hidden="true"
-                style={{
-                  background: `linear-gradient(90deg, ${RAMP.map(
-                    (s) => `rgba(${s.rgba[0]},${s.rgba[1]},${s.rgba[2]},${s.rgba[3]}) ${((s.dbz - 10) / 55) * 100}%`,
-                  ).join(", ")})`,
-                }}
-              />
+              <div className="legend-bar" aria-hidden="true" style={{ background: stepsGradientCss() }} />
               <ul className="legend-bands">
                 {BANDS.map((b) => (
                   <li key={b.label}>
@@ -323,7 +317,7 @@ export default function MapView({ theme, place, online }: Props) {
       </div>
 
       <p className="map-attribution">
-        {radar.data?.attribution ?? "Radar by RainViewer"} · {cyclones.data?.attribution ?? "Cyclone data by GDACS"} · Map data © Natural Earth
+        {radar.data?.attribution ?? "Radar by RainViewer"} · {cyclones.data?.attribution ?? "Cyclone data by GDACS"} · Map data © Natural Earth · Streets © OpenStreetMap contributors via OpenFreeMap
       </p>
     </section>
   );

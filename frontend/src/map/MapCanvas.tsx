@@ -2,11 +2,16 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import type { Cyclone, RadarFrames } from "../api/types";
 import type { Theme } from "../hooks/useTheme";
 import { drawBasemap, drawCities, drawPlaceMarker, drawScaleBar } from "./basemap";
+import { drawCityGround, drawCityLabels } from "./cityLayer";
+import { cityAlpha, cityTileZ, radarOpacity } from "./cityStyle";
+import { cachedCityTile, loadCityTile } from "./cityTiles";
 import { drawCyclones, hitCyclone, type CycloneHit } from "./cycloneLayer";
 import { warmIndices } from "./frames";
 import { loadGeo, type Geo } from "./geo";
 import { PALETTES } from "./palette";
 import {
+  MAX_ZOOM,
+  MIN_ZOOM,
   clampView,
   fitBounds,
   panBy,
@@ -17,7 +22,8 @@ import {
   type Size,
   type View,
 } from "./projection";
-import { TILE_PX, cachedTile, cancelQueued, loadTile, tileUrl, tileZFor } from "./radarTiles";
+import { clipToView, drawRadar, type RadarDraw } from "./radarRender";
+import { cachedTile, cancelQueued, loadTile, tileUrl, tileZFor } from "./radarTiles";
 import { INDIA_VIEW, PLACE_ZOOM, startView } from "./startView";
 
 export interface MapHandle {
@@ -42,10 +48,10 @@ interface Props {
   onSelectCyclone: (id: string | null) => void;
   /** Reports, per radar frame, whether every tile for the current view is loaded. */
   onFramesReady: (ready: boolean[]) => void;
+  /** Reports whether the view is at its widest or closest, so the zoom buttons can grey out. */
+  onZoomLimits: (limits: { atMin: boolean; atMax: boolean }) => void;
   label: string;
 }
-
-const RADAR_OPACITY = 0.92;
 
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
@@ -65,6 +71,7 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
   const flyRaf = useRef(0);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReady = useRef<string>("");
+  const lastLimits = useRef<string>("");
   const [hovering, setHovering] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -102,50 +109,61 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const geo = geoRef.current;
-    if (geo) {
+    const city = cityAlpha(view.zoom);
+    if (city >= 1) {
+      // Close in, the street-level layer replaces the country-scale shapes entirely.
+      ctx.fillStyle = palette.landIndia;
+      ctx.fillRect(0, 0, size.w, size.h);
+    } else if (geo) {
       drawBasemap(ctx, geo, view, size, palette);
     } else {
       ctx.fillStyle = palette.oceanBottom;
       ctx.fillRect(0, 0, size.w, size.h);
     }
+    if (city > 0) drawCityGround(ctx, view, size, palette, theme, dpr, city);
 
     if (showRadar && radar) {
       const path = framePath(frameIndex);
       if (path) {
         const z = tileZFor(view.zoom);
-        ctx.save();
-        ctx.globalAlpha = RADAR_OPACITY;
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
+        const items: RadarDraw[] = [];
         for (const t of visibleTiles(view, size, z)) {
           const r = tileRect(view, size, t);
           const tile = cachedTile(tileUrl(radar.host, path, t));
           if (tile) {
-            ctx.drawImage(tile, r.x, r.y, r.w + 0.5, r.h + 0.5);
+            const d = clipToView({ field: tile, ...r, u0: 0, v0: 0, u1: 1, v1: 1 }, size.w, size.h);
+            if (d) items.push(d);
             continue;
           }
           // Not loaded yet: borrow the matching quarter of the coarser parent tile if we have it.
           if (t.z > 0) {
             const parent = cachedTile(tileUrl(radar.host, path, { z: t.z - 1, x: t.x >> 1, y: t.y >> 1 }));
             if (parent) {
-              const half = TILE_PX / 2;
-              ctx.drawImage(parent, (t.x & 1) * half, (t.y & 1) * half, half, half, r.x, r.y, r.w + 0.5, r.h + 0.5);
+              const u0 = (t.x & 1) * 0.5;
+              const v0 = (t.y & 1) * 0.5;
+              const d = clipToView({ field: parent, ...r, u0, v0, u1: u0 + 0.5, v1: v0 + 0.5 }, size.w, size.h);
+              if (d) items.push(d);
             }
           }
         }
-        ctx.restore();
+        drawRadar(ctx, items, size.w, size.h, dpr, radarOpacity(view.zoom));
       }
     }
 
-    if (geo) {
-      // Keep city names clear of storm labels.
-      const avoid = showCyclones
-        ? cyclones.map((c) => {
-            const [x, y] = project(view, size, c.center[0], c.center[1]);
-            return { x: x - 16, y: y - 22, w: 150, h: 48 };
-          })
-        : [];
-      drawCities(ctx, geo, view, size, palette, avoid);
+    // Keep place names clear of storm labels and of the selected place's own label.
+    const avoid = showCyclones
+      ? cyclones.map((c) => {
+          const [x, y] = project(view, size, c.center[0], c.center[1]);
+          return { x: x - 16, y: y - 22, w: 150, h: 48 };
+        })
+      : [];
+    if (city < 1 && geo) drawCities(ctx, geo, view, size, palette, avoid);
+    if (city > 0) {
+      if (place) {
+        const [mx, my] = project(view, size, place.lon, place.lat);
+        avoid.push({ x: mx - 14, y: my - 14, w: 110, h: 28 });
+      }
+      drawCityLabels(ctx, view, size, palette, city, avoid);
     }
 
     if (showCyclones) {
@@ -193,13 +211,31 @@ const MapCanvas = forwardRef<MapHandle, Props>(function MapCanvas(props, ref) {
     [invalidate, reportReady, tilesForView],
   );
 
+  const requestCityTiles = useCallback(() => {
+    const v = viewRef.current;
+    if (cityAlpha(v.zoom) <= 0) return;
+    for (const t of visibleTiles(v, sizeRef.current, cityTileZ(v.zoom))) {
+      if (cachedCityTile(t)) continue;
+      void loadCityTile(t).then((tile) => {
+        if (tile) invalidate();
+      });
+    }
+  }, [invalidate]);
+
   /** After any view change: fetch what the current frame needs now, the rest once things settle. */
   const viewChanged = useCallback(() => {
+    const { zoom } = viewRef.current;
+    const limits = `${zoom <= MIN_ZOOM + 0.01}|${zoom >= MAX_ZOOM - 0.01}`;
+    if (limits !== lastLimits.current) {
+      lastLimits.current = limits;
+      propsRef.current.onZoomLimits({ atMin: zoom <= MIN_ZOOM + 0.01, atMax: zoom >= MAX_ZOOM - 0.01 });
+    }
     invalidate();
     requestTiles(false);
+    requestCityTiles();
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => requestTiles(true), 600);
-  }, [invalidate, requestTiles]);
+  }, [invalidate, requestTiles, requestCityTiles]);
 
   // ---- view control --------------------------------------------------------------------------
   const setView = useCallback(

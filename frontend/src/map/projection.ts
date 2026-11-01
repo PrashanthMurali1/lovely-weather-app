@@ -1,7 +1,8 @@
 // Web Mercator projection and view maths. World size at zoom z is TILE * 2^z pixels.
 export const TILE = 256;
 export const MIN_ZOOM = 3;
-export const MAX_ZOOM = 9;
+/** The district view: main roads and neighbourhood names, without pulling in street-level tiles. */
+export const MAX_ZOOM = 10.5;
 const MAX_LAT = 85.05112878;
 
 export interface View {

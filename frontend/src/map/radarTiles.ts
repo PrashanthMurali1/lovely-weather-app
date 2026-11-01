@@ -1,5 +1,5 @@
 import type { TileId } from "./projection";
-import { recolour } from "./radarScale";
+import { buildRadarField, type RadarField } from "./radarField";
 
 export const TILE_PX = 512;
 /** Highest tile level the radar server provides at 512 px. */
@@ -9,12 +9,16 @@ export const MIN_TILE_Z = 2;
 // The tile server allows 100 requests per minute per IP, so launches are spaced out.
 const MIN_GAP_MS = 700;
 const MAX_PARALLEL = 4;
+// A tile is half a megabyte of data (two bytes per pixel).
 const CACHE_LIMIT = 240;
 
 /** The service worker's tile cache (vite.config.ts). Tiles it holds need no network, so no pacing. */
 export const RADAR_TILE_CACHE = "radar-tiles";
 
-export type RadarTile = HTMLCanvasElement | null;
+export type RadarTile = RadarField | null;
+
+/** Told when a tile leaves the cache, so copies held elsewhere (the graphics card) can be released. */
+export const tileEvicted = new Set<(tile: RadarField) => void>();
 
 interface Job {
   url: string;
@@ -69,9 +73,8 @@ async function fetchAndRecolour(url: string): Promise<RadarTile> {
     if (!g) return null;
     g.drawImage(img, 0, 0);
     const px = g.getImageData(0, 0, canvas.width, canvas.height);
-    recolour(px.data);
-    g.putImageData(px, 0, 0);
-    return canvas;
+    // Keep the rain as data (intensity and coverage); the renderer draws it sharply at any zoom.
+    return buildRadarField(px.data, canvas.width, canvas.height);
   } catch {
     return null;
   }
@@ -102,7 +105,12 @@ function pump() {
 function remember(url: string, tile: RadarTile) {
   if (tile === null) return; // failures are retried on the next request
   cache.set(url, tile);
-  while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
+  while (cache.size > CACHE_LIMIT) {
+    const oldest = cache.keys().next().value as string;
+    const gone = cache.get(oldest);
+    cache.delete(oldest);
+    if (gone) for (const fn of tileEvicted) fn(gone);
+  }
 }
 
 /** Load one recoloured tile. Lower priority numbers load first. Resolves null on failure. */
@@ -144,5 +152,6 @@ export function cancelQueued(keep: (url: string) => boolean) {
 }
 
 export function clearTileCache() {
+  for (const tile of cache.values()) if (tile) for (const fn of tileEvicted) fn(tile);
   cache.clear();
 }

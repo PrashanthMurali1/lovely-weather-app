@@ -64,4 +64,13 @@ describe("pwa build output", () => {
     expect(sw).toContain("maxAgeSeconds:10800");
     expect(sw).toContain("maxEntries:600");
   });
+
+  it("keeps street-level map tiles for a week so a viewed area still draws offline", () => {
+    const raw = readFileSync(resolve(out, "sw.js"), "utf8");
+    const sw = raw.replace(/[\s"']+/g, "");
+    expect(raw).toContain("tiles.openfreemap.org");
+    expect(sw).toContain("cacheName:city-tiles");
+    expect(sw).toContain("cacheName:city-tilejson");
+    expect(sw).toContain("maxAgeSeconds:604800");
+  });
 });

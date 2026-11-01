@@ -1,9 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Cyclone, Cyclones, RadarFrames } from "../src/api/types";
 
 const state: { radar: unknown; cyclones: unknown } = { radar: null, cyclones: null };
+// The props the real map canvas would receive, so tests can play the part of the canvas.
+const canvasProps: { current: { onZoomLimits: (l: { atMin: boolean; atMax: boolean }) => void } | null } = vi.hoisted(() => ({ current: null }));
 
 vi.mock("../src/hooks/useRadar", () => ({ useRadar: () => state.radar }));
 vi.mock("../src/hooks/useCyclones", () => ({ useCyclones: () => state.cyclones }));
@@ -11,7 +13,8 @@ vi.mock("../src/hooks/useCyclones", () => ({ useCyclones: () => state.cyclones }
 vi.mock("../src/map/MapCanvas", async () => {
   const React = await import("react");
   return {
-    default: React.forwardRef((props: { frameIndex: number; showRadar: boolean; showCyclones: boolean; prefetchAll: boolean; radar: { frames: unknown[] } | null }, ref) => {
+    default: React.forwardRef((props: { frameIndex: number; showRadar: boolean; showCyclones: boolean; prefetchAll: boolean; radar: { frames: unknown[] } | null; onZoomLimits: (l: { atMin: boolean; atMax: boolean }) => void }, ref) => {
+      canvasProps.current = props;
       React.useImperativeHandle(ref, () => ({ zoomIn() {}, zoomOut() {}, fitRegion() {}, flyToPlace() {}, flyToCyclone() {} }));
       return (
         <div
@@ -137,12 +140,34 @@ describe("MapView", () => {
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 
+  it("greys out Zoom in at the closest view and Zoom out at the widest, and re-enables them after", () => {
+    render(<MapView theme="dark" place={place} online />);
+    const zoomIn = screen.getByRole("button", { name: "Zoom in" });
+    const zoomOut = screen.getByRole("button", { name: "Zoom out" });
+    expect(zoomIn).toBeEnabled();
+    expect(zoomOut).toBeEnabled();
+
+    act(() => canvasProps.current!.onZoomLimits({ atMin: false, atMax: true }));
+    expect(zoomIn).toBeDisabled();
+    expect(zoomOut).toBeEnabled();
+
+    act(() => canvasProps.current!.onZoomLimits({ atMin: true, atMax: false }));
+    expect(zoomIn).toBeEnabled();
+    expect(zoomOut).toBeDisabled();
+
+    act(() => canvasProps.current!.onZoomLimits({ atMin: false, atMax: false }));
+    expect(zoomIn).toBeEnabled();
+    expect(zoomOut).toBeEnabled();
+  });
+
   it("credits every data source", () => {
     render(<MapView theme="dark" place={place} online />);
     const text = document.querySelector(".map-attribution")!.textContent!;
     expect(text).toContain("RainViewer");
     expect(text).toContain("GDACS");
     expect(text).toContain("Natural Earth");
+    expect(text).toContain("OpenStreetMap");
+    expect(text).toContain("OpenFreeMap");
   });
 
   describe("offline and stale radar", () => {

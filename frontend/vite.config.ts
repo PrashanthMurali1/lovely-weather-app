@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { forecastFetchPlugin } from "./src/sw/forecastPlugins.ts";
-import { isCyclonesApi, isRadarFramesApi, isRadarTile } from "./src/sw/radarCaching.ts";
+import { isCityTile, isCityTileJson, isCyclonesApi, isRadarFramesApi, isRadarTile } from "./src/sw/radarCaching.ts";
 
 // Must match the port scripts/dev-backend.mjs starts uvicorn on.
 const API_TARGET = `http://localhost:${process.env.BACKEND_PORT || "8001"}`;
@@ -12,6 +12,8 @@ const THEME = "#183b5b";
 const GROUND = "#111b3b";
 // Radar older than this is never shown, so there is no reason to keep it cached.
 const RADAR_MAX_AGE_SECONDS = 3 * 60 * 60;
+// Streets and neighbourhoods change slowly, so a viewed area stays on the device for a week.
+const CITY_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export default defineConfig({
   plugins: [
@@ -83,6 +85,25 @@ export default defineConfig({
               expiration: { maxEntries: 2, maxAgeSeconds: RADAR_MAX_AGE_SECONDS },
               cacheableResponse: { statuses: [200] },
               plugins: [forecastFetchPlugin],
+            },
+          },
+          {
+            urlPattern: isCityTile,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "city-tiles",
+              expiration: { maxEntries: 300, maxAgeSeconds: CITY_MAX_AGE_SECONDS, purgeOnQuotaError: true },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            urlPattern: isCityTileJson,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "city-tilejson",
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 1, maxAgeSeconds: CITY_MAX_AGE_SECONDS },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {

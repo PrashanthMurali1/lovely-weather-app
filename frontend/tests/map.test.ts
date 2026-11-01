@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Cyclone } from "../src/api/types";
 import { currentIndex, hitCyclone } from "../src/map/cycloneLayer";
 import {
+  MAX_ZOOM,
   fitBounds,
   latToY,
   lonToX,
@@ -14,7 +15,7 @@ import {
   yToLat,
   zoomAround,
 } from "../src/map/projection";
-import { BANDS, bandFor, bandRateText, dbzFromRgb, rainRateMmH, rampRgba, recolour } from "../src/map/radarScale";
+import { BANDS, STEPS, bandFor, bandRateText, dbzFromRgb, rainRateMmH, stepRgba, stepsGradientCss } from "../src/map/radarScale";
 import { MAX_TILE_Z, MIN_TILE_Z, tileUrl, tileZFor } from "../src/map/radarTiles";
 import { formatAge } from "../src/map/time";
 
@@ -50,7 +51,7 @@ describe("projection", () => {
   });
 
   it("clamps zoom to the supported range", () => {
-    expect(zoomAround(view, size, 0, 0, 99).zoom).toBe(9);
+    expect(zoomAround(view, size, 0, 0, 99).zoom).toBe(MAX_ZOOM);
     expect(zoomAround(view, size, 0, 0, -3).zoom).toBe(3);
   });
 
@@ -110,26 +111,38 @@ describe("radar scale", () => {
     expect(dbzFromRgb(0, 136, 191)).toBe(23); // observed in a live tile
   });
 
-  it("is transparent below the drizzle floor and opaque-ish above it", () => {
-    expect(rampRgba(5)).toBeNull();
-    expect(rampRgba(10)![3]).toBeLessThan(0.5);
-    expect(rampRgba(50)![3]).toBeGreaterThan(0.9);
-    expect(rampRgba(90)).toEqual(rampRgba(65));
+  it("shows nothing below the drizzle floor and solid colour above it", () => {
+    expect(stepRgba(5)).toBeNull();
+    expect(stepRgba(10)![3]).toBeGreaterThan(0.85);
+    expect(stepRgba(90)).toEqual(stepRgba(70));
   });
 
-  it("interpolates between stops", () => {
-    const mid = rampRgba(33)!; // between green (30) and yellow (36)
-    expect(mid[0]).toBeGreaterThan(45);
-    expect(mid[0]).toBeLessThan(250);
+  it("uses flat steps: one colour across a whole step, a different one at the next", () => {
+    expect(stepRgba(26)).toEqual(stepRgba(30));
+    expect(stepRgba(30)).not.toEqual(stepRgba(32));
+    expect(stepRgba(12)).toEqual(stepRgba(17.9));
   });
 
-  it("recolours pixels in place and clears faint ones", () => {
-    // [0,136,191] is 23 dBZ; [141,133,111] is a faint grey below the floor.
-    const px = new Uint8ClampedArray([0, 136, 191, 255, 141, 133, 111, 90, 0, 0, 0, 0]);
-    recolour(px);
-    expect(px[3]).toBeGreaterThan(0);
-    expect(px[7]).toBe(0);
-    expect(px[11]).toBe(0);
+  it("goes from greens through yellow and orange to red and violet as rain gets heavier", () => {
+    const [light, , , heavy, , red, , violet] = STEPS.map((s) => s.rgb);
+    expect(light[1]).toBeGreaterThan(light[0]); // green
+    expect(heavy[0]).toBeGreaterThan(200); // yellow-ish: strong red and green
+    expect(heavy[1]).toBeGreaterThan(180);
+    expect(red[0]).toBeGreaterThan(red[1] + 120);
+    expect(violet[2]).toBeGreaterThan(violet[1]);
+  });
+
+  it("starts new steps exactly where the legend bands change", () => {
+    const starts = STEPS.map((s) => s.dbz);
+    for (const b of BANDS) expect(starts).toContain(b.fromDbz);
+  });
+
+  it("describes the steps as a hard-edged legend gradient", () => {
+    const css = stepsGradientCss();
+    expect(css).toMatch(/^linear-gradient\(90deg, /);
+    for (const s of STEPS) expect(css).toContain(`rgb(${s.rgb.join(",")})`);
+    // Hard edges: every colour has a start and an end position.
+    expect((css.match(/%/g) ?? []).length).toBe(STEPS.length * 2);
   });
 
   it("estimates rain rate with Marshall-Palmer", () => {

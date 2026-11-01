@@ -1,5 +1,6 @@
 import type { Geo, Ring, Shape } from "./geo";
 import type { MapPalette } from "./palette";
+import { scaleBar } from "./scaleBar";
 import { TILE, latToY, lonToX, project, unproject, type Size, type View } from "./projection";
 
 /** Screen transform for normalised Mercator coordinates. */
@@ -191,14 +192,9 @@ export function drawPlaceMarker(ctx: CanvasRenderingContext2D, view: View, size:
   ctx.restore();
 }
 
-/** A scale bar in km, measured along the view's central latitude. */
+/** A scale bar in km or m, measured along the view's central latitude. */
 export function drawScaleBar(ctx: CanvasRenderingContext2D, view: View, size: Size, p: MapPalette) {
-  const metresPerPx = (156543.03392 * Math.cos((view.lat * Math.PI) / 180)) / 2 ** view.zoom;
-  const targets = [10, 20, 50, 100, 200, 500, 1000, 2000];
-  const maxPx = Math.min(120, size.w * 0.25);
-  let km = targets[0];
-  for (const t of targets) if ((t * 1000) / metresPerPx <= maxPx) km = t;
-  const px = (km * 1000) / metresPerPx;
+  const { px, label } = scaleBar(view, Math.min(120, size.w * 0.25));
   const x = 14;
   const y = size.h - 34;
   ctx.save();
@@ -213,6 +209,6 @@ export function drawScaleBar(ctx: CanvasRenderingContext2D, view: View, size: Si
   ctx.stroke();
   ctx.font = "500 11px Onest, system-ui, sans-serif";
   ctx.textBaseline = "bottom";
-  ctx.fillText(`${km} km`, x + 2, y - 6);
+  ctx.fillText(label, x + 2, y - 6);
   ctx.restore();
 }
