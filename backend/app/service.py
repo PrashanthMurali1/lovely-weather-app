@@ -12,8 +12,8 @@ from app.budget import Budget
 from app.cache import Cache, CacheEntry, utcnow
 from app.config import Settings
 from app.errors import UpstreamRateLimited, UpstreamUnavailable
-from app.models import DEFAULT_MODEL, Forecast, Place
-from app.providers.base import WeatherProvider
+from app.models import DEFAULT_MODEL, Cyclones, Forecast, Place, RadarFrames
+from app.providers.base import MapsProviderProtocol, WeatherProvider
 
 T = TypeVar("T")
 log = logging.getLogger(__name__)
@@ -32,8 +32,10 @@ class WeatherService:
         settings: Settings,
         now: Callable[[], datetime] = utcnow,
         monotonic: Callable[[], float] = time.monotonic,
+        maps_provider: Optional[MapsProviderProtocol] = None,
     ):
         self.provider = provider
+        self.maps_provider = maps_provider
         self.cache = cache
         self.budget = budget
         self.settings = settings
@@ -134,6 +136,33 @@ class WeatherService:
             fetch=lambda: self.provider.forecast(lat, lon, model),
             mark_stale=lambda f: f.model_copy(update={"stale": True}),
         )
+
+    async def get_radar(self) -> RadarFrames:
+        provider = self._maps()
+        return await self._cached(
+            key="radar:frames",
+            ttl=self.settings.radar_ttl_seconds,
+            load=lambda p: RadarFrames.model_validate(p).model_copy(update={"stale": False}),
+            dump=lambda r: r.model_dump(mode="json", by_alias=True),
+            fetch=provider.radar,
+            mark_stale=lambda r: r.model_copy(update={"stale": True}),
+        )
+
+    async def get_cyclones(self) -> Cyclones:
+        provider = self._maps()
+        return await self._cached(
+            key="cyclones:nio:active",  # renamed when ended storms were dropped, so old cached payloads are never served
+            ttl=self.settings.cyclone_ttl_seconds,
+            load=lambda p: Cyclones.model_validate(p).model_copy(update={"stale": False}),
+            dump=lambda c: c.model_dump(mode="json", by_alias=True),
+            fetch=provider.cyclones,
+            mark_stale=lambda c: c.model_copy(update={"stale": True}),
+        )
+
+    def _maps(self) -> MapsProviderProtocol:
+        if self.maps_provider is None:
+            raise UpstreamUnavailable("map data is not configured")
+        return self.maps_provider
 
     async def search(self, q: str) -> list[Place]:
         nq = normalize_query(q)

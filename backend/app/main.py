@@ -13,6 +13,7 @@ from app.budget import Budget
 from app.cache import Cache
 from app.config import Settings, get_settings
 from app.errors import UpstreamRateLimited, UpstreamUnavailable
+from app.providers.maps import MapsProvider
 from app.providers.open_meteo import OpenMeteoProvider
 from app.routes import router
 from app.service import WeatherService
@@ -61,7 +62,8 @@ def create_app(
             )
             budget = Budget(settings.cache_path, settings.daily_budget_soft_limit)
             provider = OpenMeteoProvider(client, settings.upstream_timeout_seconds)
-            svc = WeatherService(provider, cache, budget, settings)
+            maps = MapsProvider(client, settings.upstream_timeout_seconds)
+            svc = WeatherService(provider, cache, budget, settings, maps_provider=maps)
         app.state.service = svc
         _purge(svc)
         task = asyncio.create_task(_purge_loop(svc))

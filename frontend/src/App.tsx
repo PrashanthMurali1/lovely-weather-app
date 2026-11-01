@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import type { Place } from "./api/types";
 import DailyList from "./components/DailyList";
 import Footer from "./components/Footer";
@@ -15,6 +15,11 @@ import { useSavedPlaces } from "./hooks/useSavedPlaces";
 import { useSpotlight } from "./hooks/useSpotlight";
 import { useTheme } from "./hooks/useTheme";
 import { DEFAULT_PLACE } from "./lib/defaults";
+
+// The map engine and its geometry are a separate chunk: the forecast view never downloads them.
+const MapView = lazy(() => import("./map/MapView"));
+
+type View = "forecast" | "map";
 
 const FALLBACK_ATTRIBUTION = "Weather data by Open-Meteo.com";
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -38,6 +43,7 @@ export default function App() {
   const { recent } = useSavedPlaces();
   const [place, setPlace] = useState<Place>(() => recent[0] ?? DEFAULT_PLACE);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [view, setView] = useState<View>(() => (new URLSearchParams(location.search).get("view") === "map" ? "map" : "forecast"));
   const [locating, setLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const pageRef = useRef<HTMLDivElement>(null);
@@ -122,6 +128,16 @@ export default function App() {
           </button>
         </div>
       </header>
+      <nav className="view-tabs" aria-label="Views">
+        <button type="button" className="tab" aria-pressed={view === "forecast"} onClick={() => setView("forecast")}>
+          <Icon name="forecast" />
+          Forecast
+        </button>
+        <button type="button" className="tab" aria-pressed={view === "map"} onClick={() => setView("map")}>
+          <Icon name="map" />
+          Radar
+        </button>
+      </nav>
       <main className="forecast">
         {locationMessage ? <p className="location-message" role="status">{locationMessage}</p> : null}
         <StatusBanner
@@ -131,7 +147,11 @@ export default function App() {
           error={forecast.isError ? forecast.error : null}
           onRetry={() => void forecast.refetch()}
         />
-        {data ? (
+        {view === "map" ? (
+          <Suspense fallback={<div className="loading" role="status"><p>Loading map…</p></div>}>
+            <MapView theme={theme} place={place} online={online} />
+          </Suspense>
+        ) : data ? (
           <>
             <Hero place={place} current={data.current} fetchedAt={data.fetchedAt} today={today} />
             <HourlyStrip hourly={data.hourly} daily={data.daily} />

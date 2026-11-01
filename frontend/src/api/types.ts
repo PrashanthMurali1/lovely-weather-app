@@ -59,3 +59,50 @@ export interface Forecast {
 export interface ApiErrorBody {
   error: { code: string; message: string };
 }
+
+export interface RadarFrame {
+  time: number;
+  path: string;
+}
+
+export interface RadarFrames {
+  host: string;
+  generatedAt: number;
+  stale: boolean;
+  frames: RadarFrame[];
+  attribution: string;
+}
+
+export interface TrackPoint {
+  lat: number;
+  lon: number;
+  time: string | null;
+  cls: string | null;
+}
+
+export interface WindField {
+  kph: number;
+  ring: number[][];
+}
+
+export interface Cyclone {
+  id: string;
+  name: string;
+  alert: string;
+  active: boolean;
+  windKph: number | null;
+  center: number[];
+  fromDate: string;
+  toDate: string;
+  track: TrackPoint[];
+  cone: number[][][];
+  windFields: WindField[];
+  reportUrl: string | null;
+}
+
+export interface Cyclones {
+  fetchedAt: string;
+  stale: boolean;
+  cyclones: Cyclone[];
+  attribution: string;
+}

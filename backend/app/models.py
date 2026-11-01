@@ -65,3 +65,50 @@ class Forecast(CamelModel):
     hourly: list[HourlyPoint]
     daily: list[DailyPoint]
     attribution: str
+
+
+class RadarFrame(CamelModel):
+    time: int
+    path: str
+
+
+class RadarFrames(CamelModel):
+    host: str
+    generated_at: int
+    stale: bool
+    frames: list[RadarFrame]
+    attribution: str
+
+
+class TrackPoint(CamelModel):
+    lat: float
+    lon: float
+    time: str | None
+    cls: str | None
+
+
+class WindField(CamelModel):
+    kph: int
+    ring: list[list[float]]
+
+
+class Cyclone(CamelModel):
+    id: str
+    name: str
+    alert: str
+    active: bool
+    wind_kph: float | None
+    center: list[float]
+    from_date: str
+    to_date: str
+    track: list[TrackPoint]
+    cone: list[list[list[float]]]
+    wind_fields: list[WindField]
+    report_url: str | None
+
+
+class Cyclones(CamelModel):
+    fetched_at: str
+    stale: bool
+    cyclones: list[Cyclone]
+    attribution: str
