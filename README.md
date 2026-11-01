@@ -72,6 +72,16 @@ All optional, prefix `WEATHER_`; see `backend/.env.example`.
 - No API key is needed.
 - Release phase (hosting, Play Store TWA) is a separate later spec.
 
+## Deployment automation
+
+`node scripts/serve.mjs` runs the one local deployment: web on `127.0.0.1:4280` and API on `127.0.0.1:8012`. It serves `frontend/dist` and restarts the backend when the build job requests it. Start it manually after a reboot.
+
+Relay's local manifest, `../automation-service/.local/applications/weather.json`, schedules `node scripts/relay-build.mjs run` every five minutes. The job fetches and fast-forwards a clean `main`, runs type checks and tests, builds into `frontend/dist-next`, activates the build, and rolls back if the live health check fails. Other branches, tracked local edits, and unpushed commits prevent deployment. Dependency installs run only when their manifests change; backend changes also request a backend restart. Validate manifest changes with Relay's `python -m backend.manage validate`, then `reload`.
+
+Git-ignored `.deploy/` holds deployment and failure state plus `last-failure.log`. A failed commit is suppressed until a newer commit arrives or `node scripts/relay-build.mjs run --force` (Relay's manual `weather.rebuild`) retries it. `--force` still respects checkout ownership. `check`, `verify`, and `plan` inspect prerequisites, build presence, and the next action respectively; `plan` fetches remote refs. If the server is stopped, the job can prepare a build without starting it.
+
+Run `node --test scripts/deploy-lib.test.mjs scripts/relay-build.test.mjs` for deployment tests (integration tests require frontend dependencies), and `npm test` for backend and frontend tests. In PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
+
 ## PWA and offline behaviour
 
 The app shell is precached. The last successful forecast per location is cached (network first, 4 s timeout), so after one online load the app opens offline and shows that forecast with an offline banner. Place searches use stale-while-revalidate. Nothing loads offline for locations never fetched online.

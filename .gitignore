@@ -16,3 +16,8 @@ dist-test/
 playwright-report/
 test-results/
 frontend/dist-test/
+
+# Local deployment automation (scripts/relay-build.mjs, scripts/serve.mjs)
+.deploy/
+frontend/dist-next/
+frontend/dist-prev/
